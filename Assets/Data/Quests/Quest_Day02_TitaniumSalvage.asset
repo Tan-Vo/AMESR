@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28e19c013da24c028a55d26e65cc484f, type: 3}
+  m_Name: Quest_Day02_TitaniumSalvage
+  questId: CREW_DAY02_TITANIUM_SALVAGE
+  title: "Gia Cố Bình Dưỡng Khí"
+  category: 1
+  description: "Thu thập 5 thỏi Hợp Kim Titan từ mảnh vỡ vệ tinh cũ để Robot Bolt-88 độ bình oxy Mark-II."
+  unlockDay: 2
+  unlockPhase: 0
+  prerequisiteQuest: {fileID: 0}
+  targetIdentifier: "Titanium_Ore"
+  requiredAmount: 5
+  requiredDepth: 0
+  rewardCredits: 250
+  rewardUnlockId: "Upgrade_Oxygen_Tank_Mark2"
+  speakerName: "Bolt-88"
+  startRadioDialogue: "Bíp bíp... Bình oxy cũ của cậu rỉ sét 42% rồi. Kiếm quặng Titan về đây, tôi sẽ hàn cho cậu chiếc bình chịu áp suất 100 mét."
+  completeRadioDialogue: "Hoàn tất gia cố! Bình dưỡng khí Mark-II đã sẵn sàng. Giờ cậu có thể lặn sâu hơn gấp đôi!"

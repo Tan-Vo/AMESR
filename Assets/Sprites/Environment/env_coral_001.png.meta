@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 751324648c08409c9746cfec95de8f25
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 13
+  isReadable: 0
+  textureFormat: 1
+  maxTextureSize: 1024
+  textureSettings:
+    filterMode: 0
+  spriteMode: 1
+  spritePixelsToUnits: 64
+  alphaIsTransparency: 1
+  textureType: 8

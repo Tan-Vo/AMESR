@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28e19c013da24c028a55d26e65cc484f, type: 3}
+  m_Name: Quest_Day01_FirstDive
+  questId: MAIN_DAY01_FIRST_DIVE
+  title: "Ca Lặn Thức Tỉnh"
+  category: 0
+  description: "Lặn xuống tầng nông của Biển Tinh Vân (0-50m), săn bắt 3 con Sứa Huỳnh Quang mang về cho Bếp trưởng Gordo."
+  unlockDay: 1
+  unlockPhase: 0
+  prerequisiteQuest: {fileID: 0}
+  targetIdentifier: "Neon_Jellyfish"
+  requiredAmount: 3
+  requiredDepth: 0
+  rewardCredits: 150
+  rewardUnlockId: "Recipe_Jellyfish_Soup"
+  speakerName: "Chef Gordo"
+  startRadioDialogue: "Này nhóc Kai! Cả hạm đội đang đói meo rồi đấy. Lặn xuống vớt cho ta vài con sứa béo ngậy lên đây nhanh lên!"
+  completeRadioDialogue: "Tuyệt hảo! Món Súp Sứa Huỳnh Quang đã sẵn sàng cho thực đơn tối nay rồi!"

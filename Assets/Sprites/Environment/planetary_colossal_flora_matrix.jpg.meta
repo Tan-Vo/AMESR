@@ -1,0 +1,16 @@
+﻿fileFormatVersion: 2
+guid: 03952affcca3d35e72f12ad00cd301a7
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 12
+  isReadable: 1
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    filterMode: 1
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  spriteMode: 0
+  textureType: 0

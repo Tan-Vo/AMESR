@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28e19c013da24c028a55d26e65cc484f, type: 3}
+  m_Name: Quest_Day05_SeismicAnomaly
+  questId: MAIN_DAY05_SEISMIC_ANOMALY
+  title: "Tiếng Đập Từ Vực Sâu"
+  category: 0
+  description: "Lặn sâu xuống 120m để cắm cọc tiêu địa chấn điều tra rung chấn kỳ lạ theo lệnh của Tiến sĩ Sarah."
+  unlockDay: 5
+  unlockPhase: 0
+  prerequisiteQuest: {fileID: 0}
+  targetIdentifier: ""
+  requiredAmount: 1
+  requiredDepth: 120
+  rewardCredits: 500
+  rewardUnlockId: "Biome_CryoTrench_Access"
+  speakerName: "Dr. Sarah Vance"
+  startRadioDialogue: "Kai, cảm biến vừa ghi nhận dao động tần số thấp cực mạnh từ đáy vực. Hãy lặn xuống 120m và cắm cọc tiêu giúp tôi ngay!"
+  completeRadioDialogue: "Kỳ lạ thật... Nhịp dao động này có tính tuần hoàn sinh học, như thể... một buồng tim khổng lồ đang co bóp vậy?!"

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28e19c013da24c028a55d26e65cc484f, type: 3}
+  m_Name: Quest_Day03_VoltEelBounty
+  questId: BOUNTY_DAY03_VOLT_EEL
+  title: "Hải Xà Xung Điện Đột Biến"
+  category: 3
+  description: "Bắt hoặc tiêu diệt Hải Xà Xung Điện đang phục kích gần rạn san hô để nhận tiền thưởng lớn từ Madam Vesper."
+  unlockDay: 3
+  unlockPhase: 1
+  prerequisiteQuest: {fileID: 0}
+  targetIdentifier: "Volt_Eel"
+  requiredAmount: 1
+  requiredDepth: 0
+  rewardCredits: 400
+  rewardUnlockId: "Blueprint_Taser_Harpoon"
+  speakerName: "Madam Vesper"
+  startRadioDialogue: "Chào thợ lặn cưng. Con lươn điện đó làm hỏng 2 chuyến tàu buôn của tôi rồi. Xử lý nó, tôi sẽ thưởng hậu hĩnh."
+  completeRadioDialogue: "Làm việc dứt khoát lắm! Đây là bản thiết kế Mũi Móc Phóng Điện như đã hứa."
