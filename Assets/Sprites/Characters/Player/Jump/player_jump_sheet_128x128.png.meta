@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 03d6552c16a448f68eb428675c599370
+guid: fd1a564361004ce2a617fb2fe7661850
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -60,7 +60,7 @@ TextureImporter:
   assetBundleVariant: 
   sprites:
     - serializedVersion: 2
-      name: player_jump_01_anticipation
+      name: player_jump_01_anticipation_gather
       rect:
         serializedVersion: 2
         x: 0
@@ -74,14 +74,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 1d4221f555d248ac802c68d8b07687d4
-      internalID: 490873333
+      spriteID: 0c85bf15470842589ebc8b0ecb3979a7
+      internalID: 210091797
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: player_jump_02_launch
+      name: player_jump_02_anticipation_squash
       rect:
         serializedVersion: 2
         x: 128
@@ -95,14 +95,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 47f2e4a427344c0993f0a84b27c86a62
-      internalID: 1207100580
+      spriteID: 50aa1224d7eb4221bc0814a09c6c1168
+      internalID: 1353323044
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: player_jump_03_rising
+      name: player_jump_03_takeoff_rocket_blast
       rect:
         serializedVersion: 2
         x: 256
@@ -116,14 +116,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: f960b28195e9419b94be87d93fa3037c
-      internalID: 4183863937
+      spriteID: c9676648adfd47c683e20325dfe620f6
+      internalID: 3378996808
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: player_jump_04_apex
+      name: player_jump_04_early_lift
       rect:
         serializedVersion: 2
         x: 384
@@ -137,14 +137,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 030486ce1c4a4a83803804dcde618e2b
-      internalID: 50628302
+      spriteID: 3614e33223594314af7469dc43e5709d
+      internalID: 907338546
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: player_jump_05_fall
+      name: player_jump_05_mid_rise_ascent
       rect:
         serializedVersion: 2
         x: 512
@@ -158,14 +158,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 5093015865ed426c804fb5f7c09c4e28
-      internalID: 1351811416
+      spriteID: 5075a026daa6448395f30fb0d011997b
+      internalID: 1349885990
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: player_jump_06_land
+      name: player_jump_06_high_rise_decelerate
       rect:
         serializedVersion: 2
         x: 640
@@ -179,8 +179,134 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 93a117b8e25a419a8ea6897844c02209
-      internalID: 2476808120
+      spriteID: 885057ed3326434ca8ec2b5fce74d7dc
+      internalID: 2286966765
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: player_jump_07_apex_zero_g_float
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1865aa0f6d614ed3b0cd920b41e0d1b0
+      internalID: 409315855
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: player_jump_08_gravity_inversion_fall
+      rect:
+        serializedVersion: 2
+        x: 896
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b1e3789968c64448be1e1058a0eeccf8
+      internalID: 2984474777
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: player_jump_09_fast_falling_dive
+      rect:
+        serializedVersion: 2
+        x: 1024
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: a97cd5aebdcd4f4585a08664535bafad
+      internalID: 2843530670
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: player_jump_10_pre_land_touchdown
+      rect:
+        serializedVersion: 2
+        x: 1152
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 77d661e680c6441eaa4ad2531e1c307a
+      internalID: 2010538470
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: player_jump_11_impact_landing_squash
+      rect:
+        serializedVersion: 2
+        x: 1280
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 36721e9bc40545a180713d964e893d5c
+      internalID: 913448603
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: player_jump_12_rebound_recovery
+      rect:
+        serializedVersion: 2
+        x: 1408
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: afd0f6d681a84d41ae5ceea3442869cf
+      internalID: 2949707478
       vertices: []
       indices: 
       edges: []

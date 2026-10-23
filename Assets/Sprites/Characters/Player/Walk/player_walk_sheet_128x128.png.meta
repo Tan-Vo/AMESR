@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: b6ad0e7a918b42f787dd53d7db9c4997
+guid: 78d25315fa484dda9249006b9530408a
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -74,8 +74,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 6e3f587590a041ffafe116ee382c28a6
-      internalID: 1849645173
+      spriteID: debedd08642e4949aa66d8b237f98afd
+      internalID: 3737050376
       vertices: []
       indices: 
       edges: []
@@ -95,8 +95,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3158b761ea214f1a93c41da064202a89
-      internalID: 827897697
+      spriteID: efddde75117449559d096ede53898de4
+      internalID: 4024295029
       vertices: []
       indices: 
       edges: []
@@ -116,8 +116,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: b778b39d5bfd48a6a5c18c144ed55cda
-      internalID: 3078140829
+      spriteID: bf48392c00ac4b378e5b1d259f74923f
+      internalID: 3209181484
       vertices: []
       indices: 
       edges: []
@@ -137,8 +137,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 2380b87867fb404883e45dfb59d57530
-      internalID: 595638392
+      spriteID: 8516b28f176646ae9721a758e079e016
+      internalID: 2232857231
       vertices: []
       indices: 
       edges: []
@@ -158,8 +158,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 7bcd68947427427a8d062a3c07ce7425
-      internalID: 2077059220
+      spriteID: b1af74513a9d4d9f9f91e11d95603b48
+      internalID: 2981065809
       vertices: []
       indices: 
       edges: []
@@ -179,8 +179,92 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 20ba2db8f8d440fe850c0cce90e3cc69
-      internalID: 549072312
+      spriteID: 259898eba0a34d249a6d0cd303a7335b
+      internalID: 630757611
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: player_walk_07
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: dfb047da9ff5417b8406cdf611867972
+      internalID: 3752871898
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: player_walk_08
+      rect:
+        serializedVersion: 2
+        x: 896
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2ef12963f41444d3a6cb1b8d99c4eafb
+      internalID: 787556707
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: player_walk_09
+      rect:
+        serializedVersion: 2
+        x: 1024
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 737035fb169043f885df5ae56d8f46a5
+      internalID: 1936733691
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: player_walk_10
+      rect:
+        serializedVersion: 2
+        x: 1152
+        y: 0
+        width: 128
+        height: 128
+      alignment: 0
+      pivot: {x: 0.5, y: 0.0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 95077a2822484706aaa43f97eddc34c9
+      internalID: 2500295208
       vertices: []
       indices: 
       edges: []
