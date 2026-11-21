@@ -16,10 +16,10 @@ public sealed class SO_DamageEvent : ScriptableObject
         {
             var receiver = receivers[i];
             if (receiver == null || receiver.Hitbox != collider || !receiver.IsAlive) continue;
+            Vector2 center = receiver.transform.position;
             receiver.Receive(damage, multiplier, effect);
             if (effect == HarpoonEffect.ShockPulse)
             {
-                Vector2 center = receiver.transform.position;
                 for (int j = 0; j < receivers.Count; j++)
                     if (receivers[j] != null && ((Vector2)receivers[j].transform.position - center).sqrMagnitude <= 9f)
                         receivers[j].Stun(1f);
@@ -31,7 +31,7 @@ public sealed class SO_DamageEvent : ScriptableObject
     /// <summary>Damages each living enemy once inside a forward melee arc, blocked by terrain.</summary>
     public void Melee(Vector2 origin, Vector2 direction, float range, int damage)
     {
-        for (int i = 0; i < receivers.Count; i++)
+        for (int i = receivers.Count - 1; i >= 0; i--)
         {
             var receiver = receivers[i];
             if (receiver == null || !receiver.IsAlive || receiver.IsPlayer) continue;

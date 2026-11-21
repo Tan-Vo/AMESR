@@ -18,6 +18,8 @@ public sealed class CreatureSpawner : MonoBehaviour
     [SerializeField] private SO_CreatureEvent onCreatureReleased;
     [SerializeField] private SO_LootSpawnEvent onLootSpawnRequested;
     [SerializeField] private SO_LootPickupEvent onLootReleased;
+    [SerializeField] private SO_IntEvent onStateEntered;
+    private bool bossEncounter;
     private readonly Dictionary<SO_CreatureData, ObjectPool<CreatureBase>> creaturePools = new();
     private CreatureBase[] active;
     private LootPickup[] drops;
@@ -51,6 +53,7 @@ public sealed class CreatureSpawner : MonoBehaviour
     }
     private void OnEnable()
     {
+        onStateEntered?.RegisterListener(StateEntered);
         onDepthChanged?.RegisterListener(SetDepth);
         onCreatureReleased?.RegisterListener(Release);
         onLootSpawnRequested?.RegisterListener(SpawnLoot);
@@ -58,15 +61,23 @@ public sealed class CreatureSpawner : MonoBehaviour
     }
     private void OnDisable()
     {
+        onStateEntered?.UnregisterListener(StateEntered);
         onDepthChanged?.UnregisterListener(SetDepth);
         onCreatureReleased?.UnregisterListener(Release);
         onLootSpawnRequested?.UnregisterListener(SpawnLoot);
         onLootReleased?.UnregisterListener(ReleaseLoot);
     }
     private void SetDepth(float value) { depth = Mathf.Max(0f, value); }
+    private void StateEntered(int state)
+    {
+        if ((GameState)state == GameState.Paused) return;
+        if ((GameState)state == GameState.BossFight) bossEncounter = true;
+        else if ((GameState)state == GameState.Diving) bossEncounter = false;
+        if (bossEncounter) while (count > 0) Release(active[count - 1]);
+    }
     private void FixedUpdate()
     {
-        if (player == null) return;
+        if (player == null || bossEncounter) return;
         currentBiome = null;
         if (biomes != null)
             foreach (var biome in biomes)
@@ -135,6 +146,7 @@ public sealed class CreatureSpawner : MonoBehaviour
     }
     private void SpawnLoot(SO_ItemData item, int quantity, Vector3 position)
     {
+        if (bossEncounter) return;
         if (lootPool == null || item == null || quantity <= 0) return;
         if (dropCount == drops.Length) ReleaseLoot(drops[0]);
         var pickup = lootPool.Get();

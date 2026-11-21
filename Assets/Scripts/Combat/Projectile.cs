@@ -4,6 +4,7 @@ using UnityEngine;
 public sealed class Projectile : MonoBehaviour
 {
     [SerializeField] private SO_DamageEvent onDamageRequested;
+    [SerializeField] private SO_PhysicsFieldEvent onPhysicsFieldRequested;
     private ProjectileObjectPool owner;
     private SpriteRenderer sprite;
     private Rigidbody2D body;
@@ -14,6 +15,13 @@ public sealed class Projectile : MonoBehaviour
     private int damage;
     private LayerMask hitMask;
     private void Awake() { sprite = GetComponent<SpriteRenderer>(); body = GetComponent<Rigidbody2D>(); }
+    private void OnEnable() { onPhysicsFieldRequested?.RegisterListener(ApplyField); }
+    private void OnDisable() { onPhysicsFieldRequested?.UnregisterListener(ApplyField); }
+    private void ApplyField(Vector2 center, float radius, float strength)
+    {
+        if ((center - body.position).sqrMagnitude <= radius * radius)
+            body.linearVelocity = Vector2.MoveTowards(body.linearVelocity, (center - body.position).normalized * strength, strength * Time.fixedDeltaTime);
+    }
     /// <summary>Initializes a leased projectile; movement uses swept raycasts to prevent tunneling.</summary>
     public void Launch(ProjectileObjectPool pool, SO_WeaponData weapon, Vector2 origin, Vector2 aim, LayerMask mask)
     {
@@ -32,7 +40,8 @@ public sealed class Projectile : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        float distance = Mathf.Min(range, speed * Time.fixedDeltaTime);
+        direction = body.linearVelocity.normalized;
+        float distance = Mathf.Min(range, body.linearVelocity.magnitude * Time.fixedDeltaTime);
         var hit = Physics2D.Raycast(body.position, direction, distance, hitMask);
         range -= distance;
         lifetime -= Time.fixedDeltaTime;

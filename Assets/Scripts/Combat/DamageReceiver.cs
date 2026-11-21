@@ -20,7 +20,7 @@ public sealed class DamageReceiver : MonoBehaviour
     /// <summary>Resolves armor and applies optional elemental status effects to this entity.</summary>
     public void Receive(int damage, float multiplier, HarpoonEffect effect)
     {
-        if (!IsAlive) return;
+        if (!IsAlive || target is IDamageGate gate && !gate.CanTakeDamage) return;
         int bonus = effect == HarpoonEffect.BlazingPlasma ? 5 :
             effect == HarpoonEffect.DarkMatter && (CompareTag("Boss") || creature != null && creature.Data.BehaviorType == CreatureBehavior.Boss) ? 10 : 0;
         int resolved = DamageSystem.CalculateDamage((int)System.Math.Min(int.MaxValue, (long)damage + bonus), multiplier, effect == HarpoonEffect.DarkMatter ? 0 : armor);

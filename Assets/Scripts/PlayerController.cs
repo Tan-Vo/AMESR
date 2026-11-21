@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(100)]
 [RequireComponent(typeof(Rigidbody2D), typeof(PlayerStateMachine), typeof(PlayerStats))]
 public sealed class PlayerController : MonoBehaviour
 {
@@ -24,6 +25,7 @@ public sealed class PlayerController : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Sprite[] lowOxygenFrames;
+    [SerializeField] private SO_PlayerEffectEvent onPlayerEffectRequested;
     private Rigidbody2D rb;
     private PlayerStateMachine stateMachine;
     private PlayerStats stats;
@@ -40,8 +42,22 @@ public sealed class PlayerController : MonoBehaviour
     private bool rescuePending;
     private float rescueY;
     private float normalGravity;
+    private Vector2 externalDrift;
+    private Vector2 previousDrift;
+    private Vector2 teleportPosition;
+    private bool teleportPending;
+    private float slowRemaining;
+    private float slowScale = 1f;
     public bool IsUnderwater { get; private set; }
     public bool IsGrounded => grounded;
+    private void OnEnable() { onPlayerEffectRequested?.RegisterListener(ApplyEffect); }
+    private void OnDisable() { onPlayerEffectRequested?.UnregisterListener(ApplyEffect); }
+    private void ApplyEffect(PlayerEffectKind kind, Vector2 value, float amount)
+    {
+        if (kind == PlayerEffectKind.Teleport) { teleportPosition = value; teleportPending = true; }
+        else if (kind == PlayerEffectKind.Slow) { slowRemaining = Mathf.Max(slowRemaining, value.x); slowScale = Mathf.Clamp(amount, 0.1f, 1f); }
+        else if (rb != null) externalDrift += (value - rb.position).normalized * amount;
+    }
 
     private void Awake()
     {
@@ -65,6 +81,15 @@ public sealed class PlayerController : MonoBehaviour
     }
     private void FixedUpdate()
     {
+        rb.linearVelocity -= previousDrift;
+        previousDrift = Vector2.zero;
+        slowRemaining = Mathf.Max(0f, slowRemaining - Time.fixedDeltaTime);
+        float motionScale = slowRemaining > 0f ? slowScale : 1f;
+        if (teleportPending)
+        {
+            teleportPending = false; rb.position = teleportPosition; rb.linearVelocity = Vector2.zero;
+            externalDrift = Vector2.zero;
+        }
         if (rescuePending)
         {
             rescuePending = false;
@@ -86,17 +111,18 @@ public sealed class PlayerController : MonoBehaviour
             if (stats.IsDead()) rb.linearVelocity = Vector2.zero;
             jumpBufferCounter = 0f;
             jumpReleased = false;
+            ApplyDrift();
             return;
         }
         if (IsUnderwater)
         {
-            Vector2 target = Vector2.ClampMagnitude(moveInput, 1f) * swimSpeed;
+            Vector2 target = Vector2.ClampMagnitude(moveInput, 1f) * swimSpeed * motionScale;
             if (jetpack != null && jetpack.IsJetpacking) target.y = Mathf.Max(target.y, rb.linearVelocity.y);
             rb.linearVelocity = Vector2.MoveTowards(rb.linearVelocity, target, acceleration * Time.fixedDeltaTime);
         }
         else
         {
-            float target = moveInput.x * (running ? runSpeed : walkSpeed);
+            float target = moveInput.x * (running ? runSpeed : walkSpeed) * motionScale;
             float rate = Mathf.Abs(target) > 0.01f ? acceleration : deceleration;
             if (!grounded) rate *= airControlMultiplier;
             rb.linearVelocity = rb.linearVelocity.WithX(Mathf.MoveTowards(rb.linearVelocity.x, target, rate * Time.fixedDeltaTime));
@@ -115,6 +141,13 @@ public sealed class PlayerController : MonoBehaviour
             if (grounded && !wasGrounded) stateMachine.ChangeState(PlayerState.Landing);
         }
         jumpReleased = false;
+        ApplyDrift();
+    }
+    private void ApplyDrift()
+    {
+        previousDrift = stats.IsDead() ? Vector2.zero : externalDrift;
+        rb.linearVelocity += previousDrift;
+        externalDrift = Vector2.zero;
     }
     private void UpdateState()
     {

@@ -120,6 +120,7 @@ public static partial class CosmicHorizonProjectBuilder
         SetArray(quest, "objectives", 1, (p, i) => { p.FindPropertyRelative("requiredAmount").intValue = 3; p.FindPropertyRelative("description").stringValue = "Catch any three creatures."; });
         BuildEcosystemData();
         BuildCantinaData();
+        BuildBossData();
     }
 
     private static void BuildScenes()
@@ -162,6 +163,7 @@ public static partial class CosmicHorizonProjectBuilder
             var playerPrefab = BuildPlayerPrefab();
             var ecosystemPrefab = BuildEcosystemPrefab();
             var customerPrefab = BuildCustomerPrefab();
+            var bossPrefabs = BuildBossPrefabs();
             string[] names = { "SC_MainMenu", "SC_Tutorial", "SC_Mothership", "SC_DiveZone1_Shallows", "SC_DiveZone2_Twilight", "SC_DiveZone3_Abyssal", "SC_DiveZone4_EventHorizon", "SC_NebulaCantina", "SC_BossArena" };
             var buildScenes = new EditorBuildSettingsScene[names.Length];
             for (int i = 0; i < names.Length; i++)
@@ -188,8 +190,10 @@ public static partial class CosmicHorizonProjectBuilder
                 {
                     BuildDiveScene(scene, playerPrefab, i >= 3 && i <= 6 ? i - 3 : 0);
                     BuildEcosystemScene(scene, ecosystemPrefab);
+                    BuildBossTrigger(scene, i >= 3 && i <= 6 ? i - 3 : 0);
                 }
                 if (names[i] == "SC_NebulaCantina") BuildCantinaScene(scene, playerPrefab, customerPrefab);
+                if (names[i] == "SC_BossArena") BuildBossArena(scene, bossPrefabs);
                 EditorSceneManager.SaveScene(scene, path);
                 buildScenes[i] = new EditorBuildSettingsScene(path, true);
             }

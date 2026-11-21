@@ -60,6 +60,7 @@ public static partial class CosmicHorizonProjectBuilder
         Folder("Assets/Prefabs/Diving");
         var tip = new GameObject("HarpoonTip", typeof(SpriteRenderer), typeof(Rigidbody2D), typeof(CircleCollider2D), typeof(HarpoonProjectile));
         ConfigureProjectileBody(tip);
+        WireChannels(tip.GetComponent<HarpoonProjectile>());
         tip.tag = "Harpoon";
         tip.layer = 8;
         tip.GetComponent<SpriteRenderer>().sprite = SpriteAt("Weapons/harpoon_tip_basic_gravity.png");

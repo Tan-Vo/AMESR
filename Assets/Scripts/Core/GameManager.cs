@@ -10,6 +10,7 @@ public sealed class GameManager : Singleton<GameManager>
     [SerializeField] private SO_GameEvent onSaveRequested;
     [SerializeField] private SO_GameEvent onCaptureSave;
     [SerializeField] private SO_GameEvent onSaveLoaded;
+    [SerializeField] private SO_GameEvent onBossReturnRequested;
     [SerializeField] private SO_StringEvent onSceneRequested;
     [SerializeField] private SO_StringEvent onSceneLoaded;
     [SerializeField] private SO_StringEvent onSceneFailed;
@@ -32,6 +33,7 @@ public sealed class GameManager : Singleton<GameManager>
         onSaveLoaded?.RegisterListener(RestoreSave);
         onSceneLoaded?.RegisterListener(SceneReady);
         onSceneFailed?.RegisterListener(SceneFailed);
+        onBossReturnRequested?.RegisterListener(EndDiving);
     }
     private void OnDisable()
     {
@@ -40,6 +42,7 @@ public sealed class GameManager : Singleton<GameManager>
         onSaveLoaded?.UnregisterListener(RestoreSave);
         onSceneLoaded?.UnregisterListener(SceneReady);
         onSceneFailed?.UnregisterListener(SceneFailed);
+        onBossReturnRequested?.UnregisterListener(EndDiving);
         if (Instance == this) Time.timeScale = 1f;
     }
     private void Update()

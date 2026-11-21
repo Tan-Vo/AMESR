@@ -136,6 +136,14 @@ internal static class CoreTests
         rejected = false;
         try { UpgradeCostCurve.Calculate(100, 0.5, -1); } catch (ArgumentOutOfRangeException) { rejected = true; }
         Check(rejected, "invalid upgrade curve rejected");
-        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (core + diving + combat + service/reputation/upgrade math; no Unity runtime).");
+        Check(BossPhaseMath.Phase(100, 100) == 1 && BossPhaseMath.Phase(67, 100) == 1, "boss first phase");
+        Check(BossPhaseMath.Phase(66, 100) == 2 && BossPhaseMath.Phase(34, 100) == 2, "boss second phase boundary");
+        Check(BossPhaseMath.Phase(33, 100) == 3 && BossPhaseMath.Phase(0, 100) == 3, "boss final phase boundary and empty health");
+        Check(BossPhaseMath.Phase(-1, 100) == 3 && BossPhaseMath.Phase(200, 100) == 1, "boss health clamped");
+        Check(BossPhaseMath.Phase(int.MaxValue, int.MaxValue) == 1, "boss threshold comparison does not overflow");
+        rejected = false;
+        try { BossPhaseMath.Phase(0, 0); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "invalid boss maximum rejected");
+        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (core + diving + combat + service/reputation/upgrade + boss phase math; no Unity runtime).");
     }
 }

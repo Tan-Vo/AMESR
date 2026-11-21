@@ -35,6 +35,7 @@ public static partial class CosmicHorizonProjectBuilder
         WireChannels(player.AddComponent<PlayerStats>());
         WireChannels(player.AddComponent<DiveCargo>());
         var controller = player.AddComponent<PlayerController>();
+        WireChannels(controller);
         var ground = new GameObject("GroundCheck").transform;
         ground.SetParent(player.transform, false);
         ground.localPosition = new Vector3(0, -0.44f, 0);
