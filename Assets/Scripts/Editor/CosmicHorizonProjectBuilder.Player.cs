@@ -71,6 +71,7 @@ public static partial class CosmicHorizonProjectBuilder
         canvasObject.GetComponent<Canvas>().sortingOrder = 100;
         Set(feedback, "waterOverlay", Overlay(canvasObject.transform, "WaterTint"), "oxygenOverlay", Overlay(canvasObject.transform, "OxygenWarning"));
         BuildDivingPlayer(player, canvasObject.transform);
+        BuildCombatPlayer(player, canvasObject.transform);
         return PrefabUtility.SaveAsPrefabAsset(player, "Assets/Prefabs/Player/PF_Player.prefab");
     }
     private static Image Overlay(Transform parent, string name)
@@ -96,11 +97,11 @@ public static partial class CosmicHorizonProjectBuilder
         foreach (var transition in machine.anyStateTransitions) machine.RemoveAnyStateTransition(transition);
         foreach (var state in machine.states) machine.RemoveState(state.state);
         controller.parameters = new AnimatorControllerParameter[0];
-        string[] bools = { "isRunning", "isJumping", "isSwimming", "isDiving", "isHarpooning", "isWaitering", "isHurt", "isDead", "isMining" };
+        string[] bools = { "isRunning", "isJumping", "isSwimming", "isDiving", "isHarpooning", "isWaitering", "isHurt", "isDead", "isMining", "isShooting", "isSlashing" };
         foreach (string parameter in bools) controller.AddParameter(parameter, AnimatorControllerParameterType.Bool);
         foreach (string parameter in new[] { "Speed", "VelocityY" }) controller.AddParameter(parameter, AnimatorControllerParameterType.Float);
         foreach (string parameter in new[] { "Attack", "Hurt", "Die" }) controller.AddParameter(parameter, AnimatorControllerParameterType.Trigger);
-        string[] names = { "Idle", "Walk", "Run", "Jump", "Swim", "Hurt", "Dead", "HarpoonAim", "Mining" };
+        string[] names = { "Idle", "Walk", "Run", "Jump", "Swim", "Hurt", "Dead", "HarpoonAim", "Mining", "Shoot", "Slash" };
         string[][] paths = {
             Frames("Characters/Player/Idle/player_idle_", 10),
             Frames("Characters/Player/Walk/player_walk_", 8),
@@ -110,7 +111,9 @@ public static partial class CosmicHorizonProjectBuilder
             new[] { "Characters/Player/Actions/player_action_hurt_01_impact.png", "Characters/Player/Actions/player_action_hurt_02_recover.png" },
             new[] { "Characters/Player/Actions/player_action_hurt_01_impact.png" },
             Frames("Characters/player_anim_harpoon_aim_", 6),
-            new[] { "Characters/Player/Actions/player_action_mine_drill_active.png" }
+            new[] { "Characters/Player/Actions/player_action_mine_drill_active.png" },
+            new[] { "Characters/Player/Actions/player_action_shoot_01_aim.png", "Characters/Player/Actions/player_action_shoot_02_fire.png", "Characters/Player/Actions/player_action_shoot_03_recoil.png" },
+            new[] { "Characters/Player/Actions/player_action_slash_01_windup.png", "Characters/Player/Actions/player_action_slash_02_strike.png", "Characters/Player/Actions/player_action_slash_03_recover.png" }
         };
         for (int i = 0; i < names.Length; i++)
         {
@@ -122,7 +125,7 @@ public static partial class CosmicHorizonProjectBuilder
             for (int frame = 0; frame < keys.Length; frame++) keys[frame] = new ObjectReferenceKeyframe { time = frame / 12f, value = SpriteAt(paths[i][Mathf.Min(frame, paths[i].Length - 1)]) };
             AnimationUtility.SetObjectReferenceCurve(clip, EditorCurveBinding.PPtrCurve("", typeof(SpriteRenderer), "m_Sprite"), keys);
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = i < 3 || i == 4 || i >= 7;
+            settings.loopTime = i < 3 || i == 4 || i == 7 || i == 8;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
             var state = machine.AddState(names[i]);
             state.motion = clip;
@@ -139,6 +142,10 @@ public static partial class CosmicHorizonProjectBuilder
             if (i == 7) continue;
             transition.AddCondition(i == 8 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isMining");
             if (i == 8) continue;
+            transition.AddCondition(i == 9 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isShooting");
+            if (i == 9) continue;
+            transition.AddCondition(i == 10 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isSlashing");
+            if (i == 10) continue;
             transition.AddCondition(i == 4 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isSwimming");
             if (i == 4) continue;
             transition.AddCondition(i == 3 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isJumping");

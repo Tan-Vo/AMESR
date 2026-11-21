@@ -260,6 +260,7 @@ public static partial class CosmicHorizonProjectBuilder
                 case int value: property.intValue = value; break;
                 case float value: property.floatValue = value; break;
                 case Color value: property.colorValue = value; break;
+                case bool value: property.boolValue = value; break;
                 case UnityEngine.Object value: property.objectReferenceValue = value; break;
             }
         }

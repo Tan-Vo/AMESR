@@ -59,6 +59,7 @@ public static partial class CosmicHorizonProjectBuilder
             SetArray(biome, "spawnWeights", eligible.Length, (p, j) => p.floatValue = eligible[j].BehaviorType == CreatureBehavior.Aggressive ? 1f + i : 3f);
         }
         BuildDivingData();
+        BuildCombatData();
     }
     private static GameObject BuildEcosystemPrefab()
     {
@@ -117,6 +118,7 @@ public static partial class CosmicHorizonProjectBuilder
         var capture = creature.AddComponent<CaptureTarget>();
         WireChannels(capture);
         Set(capture, "catalog", Ensure<SO_CatchCatalog>("Data/SO_CatchCatalog"));
+        BuildDamageReceiver(creature, component);
         return PrefabUtility.SaveAsPrefabAsset(creature, "Assets/Prefabs/Creatures/" + name + ".prefab");
     }
     private static void BuildEcosystemScene(Scene scene, GameObject prefab)

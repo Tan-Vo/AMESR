@@ -3,7 +3,7 @@ using UnityEngine;
 public enum CreatureState { Idle, Wandering, Fleeing, Chasing, Attacking, Stunned, Caught, Dead }
 
 [RequireComponent(typeof(Rigidbody2D), typeof(SpriteRenderer), typeof(Collider2D))]
-public class CreatureBase : MonoBehaviour
+public class CreatureBase : MonoBehaviour, IDamageable
 {
     [SerializeField] private SO_CreatureData data;
     [SerializeField] private SO_CreatureEvent onCreatureReleased;
@@ -18,6 +18,10 @@ public class CreatureBase : MonoBehaviour
     public int CurrentHP { get; private set; }
     public bool IsAlive => State != CreatureState.Dead && State != CreatureState.Caught;
     public bool IsHooked { get; private set; }
+    private float slowRemaining;
+    public float MotionMultiplier => slowRemaining > 0f ? 0.5f : 1f;
+    /// <summary>Applies a 50% slow without changing physics outside its simulation step.</summary>
+    public void ApplySlow(float seconds) { slowRemaining = Mathf.Max(slowRemaining, seconds); }
     /// <summary>Allows a capture cable to temporarily own movement.</summary>
     public void SetHooked(bool value) { IsHooked = value; }
     private SpriteRenderer sprite;
@@ -47,6 +51,7 @@ public class CreatureBase : MonoBehaviour
         StateTimer = flash = age = 0f;
         initialized = true;
         IsHooked = false;
+        slowRemaining = 0f;
         stopPending = false;
         sprite.color = Color.white;
         sprite.sprite = data.Icon;
@@ -54,6 +59,7 @@ public class CreatureBase : MonoBehaviour
     private void FixedUpdate()
     {
         if (!initialized || data == null) return;
+        slowRemaining = Mathf.Max(0f, slowRemaining - Time.fixedDeltaTime);
         if (stopPending)
         {
             stopPending = false;
@@ -84,7 +90,7 @@ public class CreatureBase : MonoBehaviour
     /// <summary>Runs physics behavior; subclasses supply specialized steering.</summary>
     public virtual void UpdateBehavior()
     {
-        Body.linearVelocity = new Vector2(data.MoveSpeed, Mathf.Sin(Time.fixedTime) * 0.4f);
+        Body.linearVelocity = new Vector2(data.MoveSpeed, Mathf.Sin(Time.fixedTime) * 0.4f) * MotionMultiplier;
     }
     /// <summary>Applies damage, flashes the sprite, and handles lethal hits.</summary>
     public void TakeDamage(int amount)

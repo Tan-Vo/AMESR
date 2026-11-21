@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(PlayerStateMachine))]
-public sealed class PlayerStats : MonoBehaviour
+public sealed class PlayerStats : MonoBehaviour, IDamageable
 {
     [SerializeField] private int maxHP = 100;
     [SerializeField] private float maxOxygen = 100f;
@@ -19,6 +19,7 @@ public sealed class PlayerStats : MonoBehaviour
     public float CurrentOxygen { get; private set; }
     public float CurrentFuel { get; private set; }
     public int MaxHP => maxHP;
+    public bool IsAlive => !IsDead();
     public float MaxOxygen => maxOxygen;
     public int InventoryCapacity => inventoryCapacity;
     private void Awake()

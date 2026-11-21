@@ -11,6 +11,8 @@ public static class AnimatorHashes
     public static readonly int IsHurt = Animator.StringToHash("isHurt");
     public static readonly int IsDead = Animator.StringToHash("isDead");
     public static readonly int IsMining = Animator.StringToHash("isMining");
+    public static readonly int IsShooting = Animator.StringToHash("isShooting");
+    public static readonly int IsSlashing = Animator.StringToHash("isSlashing");
     public static readonly int Speed = Animator.StringToHash("Speed");
     public static readonly int VelocityY = Animator.StringToHash("VelocityY");
     public static readonly int AttackTrigger = Animator.StringToHash("Attack");

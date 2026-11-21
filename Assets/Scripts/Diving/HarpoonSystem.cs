@@ -15,6 +15,7 @@ public sealed class HarpoonSystem : MonoBehaviour
     [SerializeField] private SO_DiveInteractionEvent onDiveInteraction;
     [SerializeField] private SO_GameEvent onCableSnapped;
     [SerializeField] private Image tensionMeter;
+    [SerializeField] private SO_DamageEvent onDamageRequested;
     private PlayerStateMachine states;
     private Rigidbody2D body;
     private HarpoonProjectile tip;
@@ -30,6 +31,10 @@ public sealed class HarpoonSystem : MonoBehaviour
     private float tugDuration;
     private float cooldown;
     public bool IsBusy => tip != null || hooked != null;
+    /// <summary>Equips a harpoon definition from the selected weapon slot.</summary>
+    public void Equip(SO_WeaponData weapon) { if (weapon != null && weapon.WeaponType == WeaponType.Harpoon) equippedHarpoon = weapon; }
+    /// <summary>Queues an externally requested shot for the next physics step.</summary>
+    public void RequestFire(Vector2 direction) { if (selected) { aim = direction.normalized; fire = true; } }
     private void Awake() { states = GetComponent<PlayerStateMachine>(); body = GetComponent<Rigidbody2D>(); hitCallback = OnHit; }
     /// <summary>Enables harpoon input when selected by the weapon loadout.</summary>
     public void SetSelected(bool value) { selected = value; if (!value) Cancel(); }
@@ -79,6 +84,8 @@ public sealed class HarpoonSystem : MonoBehaviour
     private void OnHit(HarpoonProjectile projectile, Collider2D collider)
     {
         if (projectile != tip) return;
+        if (collider != null && equippedHarpoon != null)
+            onDamageRequested?.Hit(collider, equippedHarpoon.BaseDamage, 1f, equippedHarpoon.HarpoonEffect);
         hooked = onDiveInteraction != null ? onDiveInteraction.Resolve(collider) : null;
         harpoonPool.Return(tip);
         tip = null;

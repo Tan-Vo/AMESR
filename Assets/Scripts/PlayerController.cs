@@ -140,6 +140,8 @@ public sealed class PlayerController : MonoBehaviour
             animator.SetBool(AnimatorHashes.IsHurt, stateMachine.CurrentState == PlayerState.Hurt);
             animator.SetBool(AnimatorHashes.IsDead, stats.IsDead());
             animator.SetBool(AnimatorHashes.IsMining, stateMachine.CurrentState == PlayerState.Mining);
+            animator.SetBool(AnimatorHashes.IsShooting, stateMachine.CurrentState == PlayerState.Combat_Ranged);
+            animator.SetBool(AnimatorHashes.IsSlashing, stateMachine.CurrentState == PlayerState.Combat_Melee);
             animator.SetBool(AnimatorHashes.IsHarpooning, stateMachine.CurrentState == PlayerState.HarpoonAiming || stateMachine.CurrentState == PlayerState.HarpoonReeling);
             animator.SetBool(AnimatorHashes.IsWaitering, stateMachine.CurrentState >= PlayerState.Waiter_Idle && stateMachine.CurrentState <= PlayerState.Waiter_Serving);
         }

@@ -20,13 +20,13 @@ public sealed class CreatureAI_Passive : CreatureBase
         {
             StateTimer -= Time.fixedDeltaTime;
             Vector2 away = Player != null ? (Vector2)(transform.position - Player.position) : Vector2.right;
-            Body.linearVelocity = away.normalized * Data.MoveSpeed * 1.7f;
+            Body.linearVelocity = away.normalized * Data.MoveSpeed * 1.7f * MotionMultiplier;
             if (StateTimer <= 0f) { State = CreatureState.Wandering; wanderTimer = 2f; }
             return;
         }
         wanderTimer -= Time.fixedDeltaTime;
         if (wanderTimer <= 0f) { direction = -direction; wanderTimer = Random.Range(2f, 5f); }
-        Body.linearVelocity = new Vector2(direction * Data.MoveSpeed, Mathf.Sin(Time.fixedTime * 1.7f + phase) * 0.5f);
+        Body.linearVelocity = new Vector2(direction * Data.MoveSpeed, Mathf.Sin(Time.fixedTime * 1.7f + phase) * 0.5f) * MotionMultiplier;
         if (Player != null && (Player.position - transform.position).sqrMagnitude < Data.DetectionRadius * Data.DetectionRadius)
         { State = CreatureState.Fleeing; StateTimer = 3f; }
     }

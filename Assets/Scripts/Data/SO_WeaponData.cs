@@ -3,6 +3,8 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Cosmic Horizon/Data/WeaponData")]
 public class SO_WeaponData : ScriptableObject
 {
+    [SerializeField] private HarpoonEffect harpoonEffect;
+    public HarpoonEffect HarpoonEffect => harpoonEffect;
     [SerializeField] private string weaponName;
     public string WeaponName => weaponName;
     [SerializeField] private Sprite icon;

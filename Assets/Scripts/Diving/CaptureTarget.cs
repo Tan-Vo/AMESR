@@ -6,6 +6,7 @@ public sealed class CaptureTarget : MonoBehaviour
     [SerializeField] private SO_DiveInteractionEvent onDiveInteraction;
     [SerializeField] private SO_ItemCollectionEvent onItemCollectionRequested;
     [SerializeField] private SO_CatchCatalog catalog;
+    [SerializeField] private SO_FloatingTextEvent onFloatingTextRequested;
     private CreatureBase creature;
     private Rigidbody2D body;
     public Collider2D Hitbox { get; private set; }
@@ -33,6 +34,7 @@ public sealed class CaptureTarget : MonoBehaviour
         var item = catalog.Find(creature.Data);
         if (item == null || !onItemCollectionRequested.TryCollect(item, 1)) return false;
         creature.OnCaught();
+        onFloatingTextRequested?.Raise(transform.position, "+1 " + item.ItemName, Color.cyan);
         return true;
     }
 }

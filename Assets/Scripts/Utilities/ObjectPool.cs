@@ -11,6 +11,7 @@ public class ObjectPool<T> : MonoBehaviour where T : MonoBehaviour
     private readonly HashSet<T> owned = new();
     private readonly HashSet<T> leased = new();
     private bool sealedPool;
+    public int AvailableCount => available.Count;
 
     private void Awake() { PreWarm(initialSize); }
     private void Start() { sealedPool = true; }

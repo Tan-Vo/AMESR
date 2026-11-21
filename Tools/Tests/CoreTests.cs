@@ -104,6 +104,18 @@ internal static class CoreTests
         rejected = false;
         try { TensionMath.ReelSpeed(float.NaN, 1f, 1f, 0f, false); } catch (ArgumentOutOfRangeException) { rejected = true; }
         Check(rejected, "nonfinite reel speed rejected");
-        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (Timer + SaveData + OxygenMath + WeightedSelection + TensionMath; no Unity runtime).");
+        Check(DamageSystem.CalculateDamage(10, 1.5f, 3) == 12, "scaled damage minus armor");
+        Check(DamageSystem.CalculateDamage(5, 1f, 100) == 1, "armor cannot reduce below one");
+        Check(DamageSystem.CalculateDamage(0, 0f, 0) == 1, "zero attack minimum");
+        Check(DamageSystem.CalculateDamage(-10, 1f, -3) == 1, "negative damage and armor bounded");
+        Check(DamageSystem.CalculateDamage(5, 1.5f, 0) == 7, "fractional damage floors");
+        Check(DamageSystem.CalculateDamage(int.MaxValue, float.MaxValue, 0) == int.MaxValue, "overflow damage saturates");
+        rejected = false;
+        try { DamageSystem.CalculateDamage(10, float.NaN, 0); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "NaN multiplier rejected");
+        rejected = false;
+        try { DamageSystem.CalculateDamage(10, -1f, 0); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "negative multiplier rejected");
+        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (Timer + SaveData + OxygenMath + WeightedSelection + TensionMath + DamageSystem; no Unity runtime).");
     }
 }
