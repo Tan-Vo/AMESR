@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(PlayerStateMachine))]
@@ -7,6 +8,7 @@ public sealed class WeaponController : MonoBehaviour
     [SerializeField] private WeaponBase[] weapons;
     [SerializeField] private SpriteRenderer weaponSprite;
     [SerializeField] private Text weaponLabel;
+    [SerializeField] private SO_WeaponHUDEvent onWeaponHUDChanged;
     private PlayerStateMachine states;
     private int index;
     private bool fire;
@@ -32,7 +34,7 @@ public sealed class WeaponController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Q) && !states.MovementLocked) Select(index + 1);
         if (Current == null || Current.Data == null) return;
         reload |= Input.GetKeyDown(KeyCode.R);
-        if (Current.Data.WeaponType != WeaponType.Harpoon)
+        if (Current.Data.WeaponType != WeaponType.Harpoon && !(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()))
             fire |= Current.Data.IsAutomatic ? Input.GetButton("Fire1") : Input.GetButtonDown("Fire1");
         var camera = Camera.main;
         if (camera != null) direction = ((Vector2)camera.ScreenToWorldPoint(Input.mousePosition) - (Vector2)transform.position).normalized;
@@ -65,6 +67,7 @@ public sealed class WeaponController : MonoBehaviour
             displayedWeapon = Current.Data;
             displayedAmmo = Current.CurrentAmmo;
             displayedReload = Current.IsReloading;
+            onWeaponHUDChanged?.Raise(Current.Data, Current.CurrentAmmo, Current.IsReloading);
             weaponLabel.text = Current.Data.WeaponName + (Current.Data.IsMelee || Current.Data.WeaponType == WeaponType.Harpoon ? " ∞" : "  " + Current.CurrentAmmo + "/" + Current.Data.MaxAmmo) +
                 (Current.IsReloading ? " RELOADING" : "") + "\nQ: Switch weapon   R: Reload   1–5: Harpoon tip";
         }

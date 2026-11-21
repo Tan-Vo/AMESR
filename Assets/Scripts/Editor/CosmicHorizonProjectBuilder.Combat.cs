@@ -124,6 +124,7 @@ public static partial class CosmicHorizonProjectBuilder
         text.alignment = TextAnchor.MiddleCenter;
         text.raycastTarget = false;
         var controller = player.AddComponent<WeaponController>();
+        WireChannels(controller);
         SetArray(controller, "weapons", weapons.Length, (p, i) => p.objectReferenceValue = weapons[i]);
         Set(controller, "weaponSprite", gun.GetComponent<SpriteRenderer>(), "weaponLabel", text);
     }

@@ -13,6 +13,7 @@ public sealed class PlayerStats : MonoBehaviour, IDamageable
     [SerializeField] private SO_GameEvent onPlayerDied;
     [SerializeField] private SO_GameEvent onPlayerHurt;
     [SerializeField] private SO_IntEvent onPlayerDamageRequested;
+    [SerializeField] private SO_IntEvent onHealRequested;
     private PlayerStateMachine stateMachine;
     private float invulnerability;
     public int CurrentHP { get; private set; }
@@ -30,8 +31,8 @@ public sealed class PlayerStats : MonoBehaviour, IDamageable
         CurrentFuel = Mathf.Max(1f, maxFuel);
     }
     private void Start() { Publish(); }
-    private void OnEnable() { onPlayerDamageRequested?.RegisterListener(TakeDamage); }
-    private void OnDisable() { onPlayerDamageRequested?.UnregisterListener(TakeDamage); }
+    private void OnEnable() { onPlayerDamageRequested?.RegisterListener(TakeDamage); onHealRequested?.RegisterListener(Heal); }
+    private void OnDisable() { onPlayerDamageRequested?.UnregisterListener(TakeDamage); onHealRequested?.UnregisterListener(Heal); }
     private void Update() { if (invulnerability > 0f) invulnerability -= Time.deltaTime; }
     /// <summary>Applies damage with a short hit immunity window.</summary>
     public void TakeDamage(int amount)

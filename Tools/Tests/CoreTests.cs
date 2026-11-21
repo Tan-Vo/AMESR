@@ -144,6 +144,12 @@ internal static class CoreTests
         rejected = false;
         try { BossPhaseMath.Phase(0, 0); } catch (ArgumentOutOfRangeException) { rejected = true; }
         Check(rejected, "invalid boss maximum rejected");
-        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (core + diving + combat + service/reputation/upgrade + boss phase math; no Unity runtime).");
+        Check(InventoryMath.Transfer(7, 95, 99) == 4, "inventory partial stack merge");
+        Check(InventoryMath.Transfer(0, 10, 99) == 0 && InventoryMath.Transfer(3, 99, 99) == 0, "empty source and full destination");
+        Check(InventoryMath.Transfer(int.MaxValue, 0, 99) == 99, "inventory transfer bounded");
+        rejected = false;
+        try { InventoryMath.Transfer(-1, 0, 99); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "invalid inventory quantity rejected");
+        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (core + diving + combat + service/reputation/upgrade + boss + inventory math; no Unity runtime).");
     }
 }

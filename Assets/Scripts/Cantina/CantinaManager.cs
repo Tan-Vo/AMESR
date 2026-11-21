@@ -32,6 +32,8 @@ public sealed class CantinaManager : MonoBehaviour
     public Vector2 Exit => exitDoor.position;
     public int Day => session != null ? session.Data.CurrentDay : 1;
     public SO_NightReport Report => report;
+    public int Revenue => revenue;
+    public IReadOnlyList<SO_DishRecipe> Menu => menu;
     private void Awake() { occupants = new CustomerAI[seats.Length]; dirty = new float[seats.Length]; }
     private void Start() { if (!IsRunning) onStateRequested?.Raise((int)GameState.CantinaPrep); }
     private void OnEnable() { onStateEntered?.RegisterListener(StateEntered); onNightEnded?.RegisterListener(EndNight); }

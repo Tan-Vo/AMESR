@@ -121,6 +121,7 @@ public static partial class CosmicHorizonProjectBuilder
         BuildEcosystemData();
         BuildCantinaData();
         BuildBossData();
+        BuildUIData();
     }
 
     private static void BuildScenes()
@@ -131,9 +132,11 @@ public static partial class CosmicHorizonProjectBuilder
         try
         {
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            BuildUIWidgets();
             var game = new GameObject("GameManager");
             var manager = game.AddComponent<GameManager>();
             WireChannels(manager);
+            WireChannels(game.AddComponent<UIFlowRouter>());
             var clock = game.AddComponent<DayNightCycleManager>();
             WireChannels(clock);
             var gamePrefab = PrefabUtility.SaveAsPrefabAsset(game, "Assets/Prefabs/Core/PF_GameManager.prefab");
@@ -194,6 +197,7 @@ public static partial class CosmicHorizonProjectBuilder
                 }
                 if (names[i] == "SC_NebulaCantina") BuildCantinaScene(scene, playerPrefab, customerPrefab);
                 if (names[i] == "SC_BossArena") BuildBossArena(scene, bossPrefabs);
+                BuildSceneUI(scene);
                 EditorSceneManager.SaveScene(scene, path);
                 buildScenes[i] = new EditorBuildSettingsScene(path, true);
             }
@@ -208,7 +212,7 @@ public static partial class CosmicHorizonProjectBuilder
             PrefabUtility.InstantiatePrefab(prefab, scene);
     }
 
-    private static void WireChannels(Component component)
+    private static void WireChannels(UnityEngine.Object component)
     {
         var serialized = new SerializedObject(component);
         var property = serialized.GetIterator();

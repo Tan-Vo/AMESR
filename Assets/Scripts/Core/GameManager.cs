@@ -11,6 +11,8 @@ public sealed class GameManager : Singleton<GameManager>
     [SerializeField] private SO_GameEvent onCaptureSave;
     [SerializeField] private SO_GameEvent onSaveLoaded;
     [SerializeField] private SO_GameEvent onBossReturnRequested;
+    [SerializeField] private SO_FloatEvent onPhaseTimeChanged;
+    private int publishedTime = -1;
     [SerializeField] private SO_StringEvent onSceneRequested;
     [SerializeField] private SO_StringEvent onSceneLoaded;
     [SerializeField] private SO_StringEvent onSceneFailed;
@@ -47,6 +49,7 @@ public sealed class GameManager : Singleton<GameManager>
     }
     private void Update()
     {
+        if (publishedTime != Mathf.CeilToInt(dayTimer)) { publishedTime = Mathf.CeilToInt(dayTimer); onPhaseTimeChanged?.Raise(dayTimer); }
         if (currentState == GameState.Paused || currentState == GameState.Loading || currentState == GameState.MainMenu) return;
         if (session != null) session.Data.TotalPlayTime += Time.deltaTime;
         if (currentState != GameState.Diving && currentState != GameState.CantinaOpen) return;
@@ -87,7 +90,7 @@ public sealed class GameManager : Singleton<GameManager>
         if (pendingScene != null) return;
         session?.Replace(new SaveData());
         currentDay = 1;
-        Load("SC_Tutorial", GameState.MorningBrief);
+        Load("SC_Mothership", GameState.MorningBrief);
     }
     /// <summary>Advances the calendar and enters a morning briefing.</summary>
     public void StartNewDay()
@@ -142,6 +145,28 @@ public sealed class GameManager : Singleton<GameManager>
     public GameState GetCurrentState() => currentState;
     /// <summary>Returns the one-based day number.</summary>
     public int GetCurrentDay() => currentDay;
+    /// <summary>Routes scene navigation through the core loading state and shared timers.</summary>
+    public void Navigate(UICommand command)
+    {
+        if (pendingScene != null || currentState == GameState.BossFight) return;
+        string scene;
+        GameState destination;
+        switch (command)
+        {
+            case UICommand.MainMenu: scene = "SC_MainMenu"; destination = GameState.MainMenu; break;
+            case UICommand.Hub: scene = "SC_Mothership"; destination = currentState == GameState.NightShop ? GameState.NightShop : GameState.MorningBrief; break;
+            case UICommand.Tutorial: scene = "SC_Tutorial"; destination = GameState.Diving; break;
+            case UICommand.Shallows: scene = "SC_DiveZone1_Shallows"; destination = GameState.Diving; break;
+            case UICommand.Twilight: scene = "SC_DiveZone2_Twilight"; destination = GameState.Diving; break;
+            case UICommand.Abyssal: scene = "SC_DiveZone3_Abyssal"; destination = GameState.Diving; break;
+            case UICommand.EventHorizon: scene = "SC_DiveZone4_EventHorizon"; destination = GameState.Diving; break;
+            case UICommand.Cantina: scene = "SC_NebulaCantina"; destination = GameState.CantinaPrep; break;
+            default: return;
+        }
+        if (destination == GameState.Diving) dayTimer = divingTimeLimitSeconds;
+        if (destination == GameState.CantinaPrep) dayTimer = cantinaTimeLimitSeconds;
+        Load(scene, destination);
+    }
 
     private void CaptureSave() { if (session != null) session.Data.CurrentDay = currentDay; }
     private void RestoreSave()

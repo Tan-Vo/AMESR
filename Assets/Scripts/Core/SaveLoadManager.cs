@@ -8,11 +8,13 @@ public sealed class SaveLoadManager : Singleton<SaveLoadManager>
     [SerializeField] private SO_GameEvent onCaptureSave;
     [SerializeField] private SO_GameEvent onSaveLoaded;
     [SerializeField] private SO_GameEvent onSaveRequested;
+    [SerializeField] private SO_GameEvent onLoadRequested;
     [SerializeField] private SO_GameEvent onSaveFailed;
     [SerializeField] private int activeSlot;
     public string LastError { get; private set; }
-    private void OnEnable() { if (onSaveRequested != null) onSaveRequested.RegisterListener(SaveActiveSlot); }
-    private void OnDisable() { if (onSaveRequested != null) onSaveRequested.UnregisterListener(SaveActiveSlot); }
+    private void OnEnable() { onSaveRequested?.RegisterListener(SaveActiveSlot); onLoadRequested?.RegisterListener(LoadActiveSlot); }
+    private void OnDisable() { onSaveRequested?.UnregisterListener(SaveActiveSlot); onLoadRequested?.UnregisterListener(LoadActiveSlot); }
+    private void LoadActiveSlot() { Load(activeSlot); }
     private void SaveActiveSlot() { Save(activeSlot); }
     private static string PathFor(int slot)
     {

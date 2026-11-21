@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [RequireComponent(typeof(PlayerStateMachine), typeof(Rigidbody2D))]
@@ -40,8 +41,9 @@ public sealed class HarpoonSystem : MonoBehaviour
     public void SetSelected(bool value) { selected = value; if (!value) Cancel(); }
     private void Update()
     {
-        held = Input.GetButton("Fire1");
-        bool pressed = Input.GetButtonDown("Fire1");
+        bool blocked = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        held = !blocked && Input.GetButton("Fire1");
+        bool pressed = !blocked && Input.GetButtonDown("Fire1");
         if (selected && pressed) { if (hooked != null) tapped = true; else fire = true; }
         var camera = Camera.main;
         if (camera != null) aim = ((Vector2)camera.ScreenToWorldPoint(Input.mousePosition) - (Vector2)firePoint.position).normalized;
