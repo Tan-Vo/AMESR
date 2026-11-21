@@ -10,5 +10,15 @@ public class SO_GameEvent : ScriptableObject
     public void RegisterListener(System.Action listener) { raised -= listener; raised += listener; }
     /// <summary>Unregisters a callback.</summary>
     public void UnregisterListener(System.Action listener) { raised -= listener; }
+    /// <summary>Registers a component listener once.</summary>
+    public void RegisterListener(SO_GameEventListener listener)
+    {
+        if (listener != null) RegisterListener(listener.OnEventRaised);
+    }
+    /// <summary>Unregisters a component listener.</summary>
+    public void UnregisterListener(SO_GameEventListener listener)
+    {
+        if (listener != null) UnregisterListener(listener.OnEventRaised);
+    }
     private void OnDisable() { raised = null; }
 }

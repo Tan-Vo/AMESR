@@ -1,7 +1,10 @@
 using System;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public static class CosmicHorizonProjectBuilder
 {
@@ -13,8 +16,10 @@ public static class CosmicHorizonProjectBuilder
     public static void BuildVerticalSlice()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Exit Play Mode first.");
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
         ConfigureProject();
         BuildData();
+        BuildScenes();
         AssetDatabase.SaveAssets();
     }
 
@@ -24,7 +29,7 @@ public static class CosmicHorizonProjectBuilder
         var tags = settings.FindProperty("tags");
         foreach (string tag in "Player Enemy Boss MiniBoss Creature Fish Projectile Harpoon GrapplePoint Loot InteractableNPC InteractableObject Customer DishPickup ServingCounter FurnitureSlot WaterSurface DepthTrigger BiomeZone Hazard SavePoint".Split(' '))
         {
-            if (Enumerable.Range(0, tags.arraySize).Any(i => tags.GetArrayElementAtIndex(i).stringValue == tag)) continue;
+            if (UnityEditorInternal.InternalEditorUtility.tags.Contains(tag) || Enumerable.Range(0, tags.arraySize).Any(i => tags.GetArrayElementAtIndex(i).stringValue == tag)) continue;
             tags.InsertArrayElementAtIndex(tags.arraySize);
             tags.GetArrayElementAtIndex(tags.arraySize - 1).stringValue = tag;
         }
@@ -63,10 +68,11 @@ public static class CosmicHorizonProjectBuilder
 
     private static void BuildData()
     {
-        foreach (string name in GameEvents) Ensure<SO_GameEvent>("Events/" + name);
+        foreach (string name in GameEvents.Concat(new[] { "OnCaptureSave", "OnSaveLoaded", "OnSaveFailed" })) Ensure<SO_GameEvent>("Events/" + name);
         foreach (string name in new[] { "OnOxygenChanged", "OnHPChanged", "OnDepthChanged" }) Ensure<SO_FloatEvent>("Events/" + name);
-        foreach (string name in new[] { "OnCreditsChanged", "OnReputationChanged", "OnStateRequested" }) Ensure<SO_IntEvent>("Events/" + name);
-        Ensure<SO_StringEvent>("Events/OnSceneRequested");
+        foreach (string name in new[] { "OnCreditsChanged", "OnReputationChanged", "OnStateRequested", "OnStateEntered" }) Ensure<SO_IntEvent>("Events/" + name);
+        foreach (string name in new[] { "OnSceneRequested", "OnSceneLoaded", "OnSceneFailed" }) Ensure<SO_StringEvent>("Events/" + name);
+        Ensure<SO_SaveSession>("Data/SO_SaveSession");
         var meat = Ensure<SO_ItemData>("Data/SO_AlienMeat");
         Set(meat, "itemName", "Alien Meat", "icon", SpriteAt("Creatures/alien_creature_001.png"), "category", 0);
         var crystal = Ensure<SO_ItemData>("Data/SO_QuantumCrystal");
@@ -111,6 +117,99 @@ public static class CosmicHorizonProjectBuilder
         var quest = Ensure<SO_QuestData>("Data/SO_FirstCatch");
         Set(quest, "questName", "First Catch", "description", "Catch three creatures.", "creditReward", 100, "icon", creatures[0].Icon);
         SetArray(quest, "objectives", 1, (p, i) => { p.FindPropertyRelative("requiredAmount").intValue = 3; p.FindPropertyRelative("description").stringValue = "Catch any three creatures."; });
+    }
+
+    private static void BuildScenes()
+    {
+        Folder("Assets/Prefabs/Core");
+        Folder("Assets/Scenes");
+        var setup = EditorSceneManager.GetSceneManagerSetup();
+        try
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var game = new GameObject("GameManager");
+            var manager = game.AddComponent<GameManager>();
+            WireChannels(manager);
+            var clock = game.AddComponent<DayNightCycleManager>();
+            WireChannels(clock);
+            var gamePrefab = PrefabUtility.SaveAsPrefabAsset(game, "Assets/Prefabs/Core/PF_GameManager.prefab");
+            var save = new GameObject("SaveLoadManager");
+            WireChannels(save.AddComponent<SaveLoadManager>());
+            var savePrefab = PrefabUtility.SaveAsPrefabAsset(save, "Assets/Prefabs/Core/PF_SaveLoadManager.prefab");
+            var transition = new GameObject("SceneTransitionManager");
+            var transitionManager = transition.AddComponent<SceneTransitionManager>();
+            WireChannels(transitionManager);
+            var canvasObject = new GameObject("FadeCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasGroup), typeof(GraphicRaycaster));
+            canvasObject.transform.SetParent(transition.transform, false);
+            var canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = short.MaxValue;
+            var group = canvasObject.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.blocksRaycasts = false;
+            var imageObject = new GameObject("Fade", typeof(RectTransform), typeof(Image));
+            imageObject.transform.SetParent(canvasObject.transform, false);
+            var rect = imageObject.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            imageObject.GetComponent<Image>().color = Color.black;
+            Set(transitionManager, "fadeCanvasGroup", group);
+            var transitionPrefab = PrefabUtility.SaveAsPrefabAsset(transition, "Assets/Prefabs/Core/PF_SceneTransitionManager.prefab");
+            string[] names = { "SC_MainMenu", "SC_Tutorial", "SC_Mothership", "SC_DiveZone1_Shallows", "SC_DiveZone2_Twilight", "SC_DiveZone3_Abyssal", "SC_DiveZone4_EventHorizon", "SC_NebulaCantina", "SC_BossArena" };
+            var buildScenes = new EditorBuildSettingsScene[names.Length];
+            for (int i = 0; i < names.Length; i++)
+            {
+                string path = "Assets/Scenes/" + names[i] + ".unity";
+                Scene scene = AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null
+                    ? EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single)
+                    : EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+                if (names[i] != "SC_BossArena")
+                {
+                    EnsureScenePrefab<GameManager>(scene, gamePrefab);
+                    EnsureScenePrefab<SaveLoadManager>(scene, savePrefab);
+                    EnsureScenePrefab<SceneTransitionManager>(scene, transitionPrefab);
+                    if (!scene.GetRootGameObjects().Any(root => root.GetComponent<Camera>() != null))
+                    {
+                        var camera = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
+                        camera.tag = "MainCamera";
+                        camera.transform.position = new Vector3(0, 0, -10);
+                        camera.GetComponent<Camera>().orthographic = true;
+                        camera.GetComponent<Camera>().orthographicSize = 7;
+                    }
+                }
+                EditorSceneManager.SaveScene(scene, path);
+                buildScenes[i] = new EditorBuildSettingsScene(path, true);
+            }
+            EditorBuildSettings.scenes = buildScenes;
+        }
+        finally { EditorSceneManager.RestoreSceneManagerSetup(setup); }
+    }
+
+    private static void EnsureScenePrefab<T>(Scene scene, GameObject prefab) where T : Component
+    {
+        if (!scene.GetRootGameObjects().Any(root => root.GetComponent<T>() != null))
+            PrefabUtility.InstantiatePrefab(prefab, scene);
+    }
+
+    private static void WireChannels(Component component)
+    {
+        var serialized = new SerializedObject(component);
+        var property = serialized.GetIterator();
+        while (property.NextVisible(true))
+        {
+            if (property.propertyType != SerializedPropertyType.ObjectReference || property.name == "m_Script") continue;
+            if (property.name == "session")
+                property.objectReferenceValue = Ensure<SO_SaveSession>("Data/SO_SaveSession");
+            else if (property.name.StartsWith("on", StringComparison.Ordinal))
+            {
+                string name = char.ToUpperInvariant(property.name[0]) + property.name.Substring(1);
+                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(Root + "/Events/" + name + ".asset");
+                if (asset == null) throw new InvalidOperationException("Missing channel: " + name);
+                property.objectReferenceValue = asset;
+            }
+        }
+        serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 
     private static Sprite SpriteAt(string path)

@@ -7,7 +7,7 @@ public class SO_DialogueLine : ScriptableObject
     public string SpeakerName => speakerName;
     [SerializeField] private Sprite portrait;
     public Sprite Portrait => portrait;
-    [SerializeField] private string[] lines;
+    [SerializeField, TextArea(3, 5)] private string[] lines;
     public string[] Lines => lines;
     [SerializeField] private DialogueEvent onComplete;
     public DialogueEvent OnComplete => onComplete;

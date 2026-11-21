@@ -5,7 +5,7 @@ public class SO_QuestData : ScriptableObject
 {
     [SerializeField] private string questName;
     public string QuestName => questName;
-    [SerializeField] private string description;
+    [SerializeField, TextArea] private string description;
     public string Description => description;
     [SerializeField] private Sprite icon;
     public Sprite Icon => icon;
