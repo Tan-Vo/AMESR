@@ -42,6 +42,22 @@ internal static class ReviewRegressionTests
         queue.Enqueue("fish"); queue.Enqueue("fish");
         check(KitchenQueueMath.Cancel(queue, "fish") && queue.Count == 1, "cancel only one customer's duplicate recipe");
 
+        for (int queued = 0; queued <= 2; queued++)
+        for (int cooking = 0; cooking <= 2; cooking++)
+        for (int ready = 0; ready <= 2; ready++)
+        for (int carried = 1; carried <= 3; carried++)
+        {
+            var waiting = new Queue<string>(); var cookingPlates = new Queue<string>(); var readyPlates = new Queue<string>();
+            for (int i = 0; i < queued; i++) waiting.Enqueue("fish");
+            for (int i = 0; i < cooking; i++) cookingPlates.Enqueue("fish");
+            for (int i = 0; i < ready; i++) readyPlates.Enqueue("fish");
+            int demand = queued + cooking + ready + carried - 1;
+            if (!KitchenQueueMath.Cancel(waiting, "fish") && !KitchenQueueMath.Cancel(cookingPlates, "fish")) KitchenQueueMath.Cancel(readyPlates, "fish");
+            int retainedTray = Math.Min(carried, demand);
+            check(waiting.Count + cookingPlates.Count + readyPlates.Count + retainedTray == demand,
+                "fungible carried cancellation conserves demand: " + queued + "/" + cooking + "/" + ready + "/" + carried);
+        }
+
         var data = new SaveData();
         check(RewardLedger.Store(data, "Maw:legendary", "core", 1), "victory reward recorded independently of cargo");
         check(!RewardLedger.Store(data, "Maw:legendary", "core", 1) && data.PendingRewards.Count == 1, "duplicate pending receipt rejected");
