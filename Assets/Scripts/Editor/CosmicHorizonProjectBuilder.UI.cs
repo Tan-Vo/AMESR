@@ -63,24 +63,11 @@ public static partial class CosmicHorizonProjectBuilder
         obj.GetComponentInChildren<Text>().text = text;
         var button = obj.GetComponent<Button>(); if (action != null) UnityEventTools.AddPersistentListener(button.onClick, action); return button;
     }
-    private static Button EnsureUIButton(Transform parent, string text, Vector2 position, UnityAction action)
-    {
-        var child = parent.Find(text);
-        var button = child == null ? UIButton(parent, text, position, null) : child.GetComponent<Button>() ?? child.gameObject.AddComponent<Button>();
-        button.GetComponent<RectTransform>().anchoredPosition = position;
-        button.targetGraphic = button.GetComponent<Graphic>();
-        button.GetComponentInChildren<Text>(true).text = text;
-        button.onClick = new Button.ButtonClickedEvent();
-        if (action != null) UnityEventTools.AddPersistentListener(button.onClick, action);
-        EditorUtility.SetDirty(button);
-        return button;
-    }
     private static void Navigation(Transform parent, string text, Vector2 position, UICommand command)
     {
         float depth = command == UICommand.Twilight ? 500 : command == UICommand.Abyssal ? 1500 : command == UICommand.EventHorizon ? 2500 : 0;
         if (depth > 500) text += " ≥" + depth + "m";
-        var button = EnsureUIButton(parent, text, position, null);
-        var endpoint = button.GetComponent<UICommandButton>() ?? button.gameObject.AddComponent<UICommandButton>(); WireChannels(endpoint);
+        var button = UIButton(parent, text, position, null); var endpoint = button.gameObject.AddComponent<UICommandButton>(); WireChannels(endpoint);
         Set(endpoint, "command", (int)command, "gear", Ensure<SO_GearProfile>("Data/SO_GearProfile"), "requiredDepth", depth); UnityEventTools.AddPersistentListener(button.onClick, endpoint.Click);
     }
     private static GameObject UISettings(Transform parent)
@@ -111,10 +98,28 @@ public static partial class CosmicHorizonProjectBuilder
         Set(settings, "volume", slider, "bgm", music, "sfx", effects, "resolution", dropdown, "fullscreen", toggle);
         UIButton(panel.transform, "Close", new Vector2(0, -220), settings.Close); panel.gameObject.SetActive(false); return panel.gameObject;
     }
+    private static void EnsureBossLootButton(Transform root)
+    {
+        const string label = "Claim boss loot";
+        if (root.Find(label) != null) return;
+
+        var inventory = Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess");
+        var button = UIButton(root, label, new Vector2(-760, -200), inventory.ClaimRewards);
+        // Match the fresh scene's draw order so HUD and modal panels stay above the button.
+        var depthGauge = root.Find("DepthGauge");
+        if (depthGauge != null) button.transform.SetSiblingIndex(depthGauge.GetSiblingIndex());
+    }
     private static void BuildSceneUI(Scene scene)
     {
-        var existing = scene.GetRootGameObjects().FirstOrDefault(obj => obj.name == "CosmicUI");
-        if (existing != null) { EnsureSceneUIControls(scene, existing.transform); return; }
+        var existingUI = scene.GetRootGameObjects().FirstOrDefault(obj => obj.name == "CosmicUI");
+        if (existingUI != null)
+        {
+            if (scene.name == "SC_Mothership") EnsureBossLootButton(existingUI.transform);
+            var existingPause = existingUI.GetComponent<PauseMenuUI>();
+            var save = existingUI.transform.Find("Pause/Save");
+            if (existingPause != null && save != null) Set(existingPause, "saveButton", save.GetComponent<Button>());
+            return;
+        }
         var obj = new GameObject("CosmicUI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         obj.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay; obj.GetComponent<Canvas>().sortingOrder = 300;
         obj.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; obj.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
@@ -154,6 +159,7 @@ public static partial class CosmicHorizonProjectBuilder
             var commands = new[] { UICommand.Tutorial, UICommand.Shallows, UICommand.Twilight, UICommand.Abyssal, UICommand.EventHorizon, UICommand.Cantina, UICommand.Sleep };
             for (int i = 0; i < commands.Length; i++) Navigation(root, commands[i].ToString(), new Vector2(-760, 300 - i * 75), commands[i]);
             BuildShop(root); BuildDialogue(root);
+            EnsureBossLootButton(root);
         }
         else if (scene.name == "SC_NebulaCantina") BuildCantinaUI(scene, root);
         else Navigation(root, "Return to hub", new Vector2(760, -450), UICommand.Hub);
@@ -170,18 +176,6 @@ public static partial class CosmicHorizonProjectBuilder
             if (i == 2) Set(pause, "saveButton", button);
         }
         pausePanel.gameObject.SetActive(false); settings.transform.SetAsLastSibling();
-        EnsureSceneUIControls(scene, root);
-    }
-    private static void EnsureSceneUIControls(Scene scene, Transform root)
-    {
-        if (scene.name == "SC_Mothership")
-        {
-            var button = EnsureUIButton(root, "Claim boss loot", new Vector2(-760, -200), Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess").ClaimRewards);
-            var title = root.Find("HubTitle"); button.transform.SetSiblingIndex(title != null ? title.GetSiblingIndex() + 1 : 0);
-        }
-        var pause = root.GetComponent<PauseMenuUI>();
-        var save = root.Find("Pause/Save");
-        if (pause != null && save != null) Set(pause, "saveButton", save.GetComponent<Button>());
     }
     private static void BuildHUD(Transform root)
     {
