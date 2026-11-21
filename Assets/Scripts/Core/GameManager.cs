@@ -12,6 +12,7 @@ public sealed class GameManager : Singleton<GameManager>
     [SerializeField] private SO_GameEvent onSaveLoaded;
     [SerializeField] private SO_GameEvent onBossReturnRequested;
     [SerializeField] private SO_FloatEvent onPhaseTimeChanged;
+    [SerializeField] private SO_FloatEvent onPhaseProgressChanged;
     private int publishedTime = -1;
     [SerializeField] private SO_StringEvent onSceneRequested;
     [SerializeField] private SO_StringEvent onSceneLoaded;
@@ -55,6 +56,7 @@ public sealed class GameManager : Singleton<GameManager>
         if (session != null) session.Data.TotalPlayTime += Time.deltaTime;
         if (currentState != GameState.Diving && currentState != GameState.CantinaOpen) return;
         dayTimer = Mathf.Max(0f, dayTimer - Time.deltaTime);
+        onPhaseProgressChanged?.Raise(PhaseClockMath.Progress(dayTimer, currentState == GameState.Diving ? divingTimeLimitSeconds : cantinaTimeLimitSeconds));
         if (dayTimer > 0f) return;
         if (currentState == GameState.Diving) EndDiving();
         else EndCantina();

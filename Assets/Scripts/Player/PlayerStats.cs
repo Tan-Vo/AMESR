@@ -14,6 +14,7 @@ public sealed class PlayerStats : MonoBehaviour, IDamageable
     [SerializeField] private SO_GameEvent onPlayerHurt;
     [SerializeField] private SO_IntEvent onPlayerDamageRequested;
     [SerializeField] private SO_IntEvent onHealRequested;
+    [SerializeField] private SO_HealingRequestEvent onHealingRequested;
     [SerializeField] private SO_GearProfile gear;
     private PlayerStateMachine stateMachine;
     private float invulnerability;
@@ -33,11 +34,16 @@ public sealed class PlayerStats : MonoBehaviour, IDamageable
         CurrentFuel = Mathf.Max(1f, maxFuel);
     }
     private void Start() { Publish(); }
-    private void OnEnable() { onPlayerDamageRequested?.RegisterListener(TakeDamage); onHealRequested?.RegisterListener(Heal); }
-    private void OnDisable() { onPlayerDamageRequested?.UnregisterListener(TakeDamage); onHealRequested?.UnregisterListener(Heal); }
+    private void OnEnable() { onPlayerDamageRequested?.RegisterListener(TakeDamage); onHealRequested?.RegisterListener(Heal); onHealingRequested?.Register(TryHeal); }
+    private void OnDisable() { onPlayerDamageRequested?.UnregisterListener(TakeDamage); onHealRequested?.UnregisterListener(Heal); onHealingRequested?.Unregister(TryHeal); }
     private void Update() { if (invulnerability > 0f) invulnerability -= Time.deltaTime; }
     /// <summary>Applies damage with a short hit immunity window.</summary>
     public void TakeDamage(int amount)
+    {
+        if (amount > 0) TakeResolvedDamage(DamageSystem.CalculateDamage(amount, 1f, gear != null ? gear.Armor : 0));
+    }
+    /// <summary>Applies damage already resolved by a DamageReceiver, without applying armor twice.</summary>
+    public void TakeResolvedDamage(int amount)
     {
         if (amount <= 0 || IsDead() || invulnerability > 0f) return;
         CurrentHP = Mathf.Max(0, CurrentHP - amount);
@@ -49,9 +55,16 @@ public sealed class PlayerStats : MonoBehaviour, IDamageable
     /// <summary>Restores health without reviving a dead player.</summary>
     public void Heal(int amount)
     {
-        if (IsDead() || amount <= 0) return;
-        CurrentHP = Mathf.Min(maxHP, CurrentHP + amount);
+        TryHeal(amount);
+    }
+    /// <summary>Restores health and acknowledges only effective healing.</summary>
+    public bool TryHeal(int amount)
+    {
+        int restored = DamageSystem.HealingAmount(CurrentHP, maxHP, amount);
+        if (restored == 0) return false;
+        CurrentHP += restored;
         onHPChanged?.Raise(CurrentHP / (float)Mathf.Max(1, maxHP));
+        return true;
     }
     /// <summary>Applies the emergency rescue health penalty without killing the player.</summary>
     public void ApplyRescuePenalty()

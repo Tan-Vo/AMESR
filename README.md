@@ -13,6 +13,8 @@ The builder preserves generated asset GUIDs but regenerates prefab content. Make
 
 Boss gates in dive zones 2–4 load SC_BossArena additively. Enter through a dive gate rather than playing the arena alone. Victory leaves a 12-second loot window before hub return.
 
+Uncollected boss rewards remain in the saved reward ledger. Free cargo slots and click **Claim boss loot** at the mothership; arena pickups and hub claims share one-time receipts. Manual saves are hub/preparation/completed-night checkpoints only, not mid-dive or during active service. After pulling code changes, rerun the builder to update generated UI and event wiring.
+
 ## Controls
 
 | Input | Action |
@@ -56,7 +58,7 @@ The compiler covers runtime **and Editor** C# using Unity's bundled Roslyn witho
 
 | Checklist item | Status / evidence or remaining reason |
 | --- | --- |
-| 70+ organized C# scripts | **V** — 159 scripts: 150 runtime, 9 Editor |
+| 70+ organized C# scripts | **V** — 164 scripts: 155 runtime, 9 Editor |
 | 15+ ScriptableObject data assets created | **B** — builder declares well over 15; generation requires a license |
 | 14+ ScriptableObject event assets | **B** — builder-authored; generation unverified |
 | Walk/run/jump, coyote time, buffering, variable jump, acceleration | **I** — PlayerController / PlayerStateMachine |

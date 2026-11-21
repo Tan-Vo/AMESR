@@ -99,10 +99,14 @@ public sealed class BossArenaDirector : MonoBehaviour
         Spawn(BossAttackKind.Explosion, position, Vector2.zero, 0, 0, 4f, 1f, 0f, boss.AttackSprite);
         Finished = true;
         if (!first) return;
-        onLootSpawnRequested?.Raise(legendaryLoot, 1, position);
+        VictoryLoot(legendaryLoot, position, id + ":legendary");
         int count = Random.Range(2, 4);
         for (int i = 0; i < count; i++) if (rareLoot.Length > 0)
-            onLootSpawnRequested?.Raise(rareLoot[Random.Range(0, rareLoot.Length)], 1, position + Vector3.right * (i - 1));
+            VictoryLoot(rareLoot[Random.Range(0, rareLoot.Length)], position + Vector3.right * (i - 1), id + ":rare:" + i);
+    }
+    private void VictoryLoot(SO_ItemData item, Vector3 position, string receipt)
+    {
+        if (item != null && RewardLedger.Store(session.Data, receipt, item.name, 1)) SpawnLoot(item, 1, position, receipt);
     }
     private void ClearCombat()
     {
@@ -111,11 +115,13 @@ public sealed class BossArenaDirector : MonoBehaviour
     }
     private void Abort() { Finished = true; ClearCombat(); }
     private void SpawnLoot(SO_ItemData item, int amount, Vector3 position)
+    { SpawnLoot(item, amount, position, null); }
+    private void SpawnLoot(SO_ItemData item, int amount, Vector3 position, string receipt)
     {
         if (item == null || dropCount == drops.Length) return;
         var drop = lootPool.Get();
         if (drop == null) return;
-        drop.Initialize(item, amount, position); drops[dropCount++] = drop;
+        drop.Initialize(item, amount, position, receipt); drops[dropCount++] = drop;
     }
     private void ReturnLoot(LootPickup drop)
     {

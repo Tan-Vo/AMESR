@@ -17,6 +17,7 @@ public static partial class CosmicHorizonProjectBuilder
         foreach (string name in new[] { "OnTutorialStarted", "OnJumped", "OnLanded", "OnHarpoonFired", "OnMineCompleted", "OnDishReady" }) Ensure<SO_GameEvent>("Events/" + name);
         foreach (string name in new[] { "OnBiomeChanged", "OnWaterStateChanged" }) Ensure<SO_IntEvent>("Events/" + name);
         Ensure<SO_FloatEvent>("Events/OnCameraTrauma");
+        Ensure<SO_FloatEvent>("Events/OnPhaseProgressChanged");
         Ensure<SO_FloatEvent>("Events/OnBgmVolumeChanged");
         Ensure<SO_FloatEvent>("Events/OnSfxVolumeChanged");
         var gear = Ensure<SO_GearProfile>("Data/SO_GearProfile"); WireChannels(gear);

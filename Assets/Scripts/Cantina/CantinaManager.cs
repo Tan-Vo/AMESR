@@ -118,6 +118,15 @@ public sealed class CantinaManager : MonoBehaviour
         }
         return found;
     }
+    /// <summary>Counts outstanding demand for a fungible dish across active waiting customers.</summary>
+    public int PendingOrders(SO_DishRecipe recipe)
+    {
+        int count = 0;
+        for (int i = 0; i < activeCount; i++) if (active[i].State == CustomerState.WaitingForOrder && active[i].Order == recipe) count++;
+        return count;
+    }
+    /// <summary>Cancels an unpaid plate when its customer abandons the order.</summary>
+    public void CancelOrder(SO_DishRecipe recipe) { if (recipe != null) kitchen.Cancel(recipe); }
     /// <summary>Delivers a plate and publishes successful service.</summary>
     public bool Serve(CustomerAI customer, SO_DishRecipe recipe)
     {

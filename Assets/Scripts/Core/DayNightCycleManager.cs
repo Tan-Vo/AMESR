@@ -2,30 +2,33 @@ using UnityEngine;
 
 public sealed class DayNightCycleManager : MonoBehaviour
 {
-    [SerializeField] private float timeScale = 60f;
     [SerializeField] private SO_IntEvent onStateEntered;
+    [SerializeField] private SO_FloatEvent onPhaseProgressChanged;
     [SerializeField] private SO_GameEvent onNoon;
     [SerializeField] private SO_GameEvent onDiveWarning;
     [SerializeField] private SO_GameEvent onSunset;
     [SerializeField] private SO_GameEvent onMidnight;
     private float clockSeconds = 8f * 3600f;
     private bool ticking;
+    private bool service;
     public float Hour => clockSeconds / 3600f;
-    private void OnEnable() { onStateEntered?.RegisterListener(StateEntered); }
-    private void OnDisable() { onStateEntered?.UnregisterListener(StateEntered); }
+    private void OnEnable() { onStateEntered?.RegisterListener(StateEntered); onPhaseProgressChanged?.RegisterListener(Progress); }
+    private void OnDisable() { onStateEntered?.UnregisterListener(StateEntered); onPhaseProgressChanged?.UnregisterListener(Progress); }
     private void StateEntered(int state)
     {
         var value = (GameState)state;
-        if (value == GameState.Paused) return;
+        if (value == GameState.Paused || value == GameState.BossFight || value == GameState.Loading) return;
+        if (ticking && (value == GameState.Surfacing || value == GameState.NightShop)) Progress(1f);
         if (!ticking && value == GameState.Diving) clockSeconds = 8f * 3600f;
         if (!ticking && value == GameState.CantinaOpen) clockSeconds = 19f * 3600f;
         ticking = value == GameState.Diving || value == GameState.CantinaOpen;
+        service = value == GameState.CantinaOpen;
     }
-    private void Update()
+    private void Progress(float progress)
     {
         if (!ticking) return;
         float oldTime = clockSeconds;
-        clockSeconds = Mathf.Min(24f * 3600f, clockSeconds + Time.deltaTime * Mathf.Max(0f, timeScale));
+        clockSeconds = PhaseClockMath.Hour(service ? 19f : 8f, service ? 24f : 18f, progress) * 3600f;
         Milestone(oldTime, 12, onNoon);
         Milestone(oldTime, 15, onDiveWarning);
         Milestone(oldTime, 18, onSunset);

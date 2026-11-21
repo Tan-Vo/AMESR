@@ -141,6 +141,7 @@ public static partial class CosmicHorizonProjectBuilder
         open.text = "OPEN CANTINA"; open.raycastTarget = true;
         var openButton = open.gameObject.AddComponent<Button>(); openButton.targetGraphic = open;
         UnityEventTools.AddPersistentListener(openButton.onClick, menu.Open);
+        Navigation(prep.transform, "Return to hub", new Vector2(0, -220), UICommand.Hub);
         new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
     }
 }

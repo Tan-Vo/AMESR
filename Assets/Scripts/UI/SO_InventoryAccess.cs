@@ -6,8 +6,25 @@ public sealed class SO_InventoryAccess : ScriptableObject
     [SerializeField] private SO_SaveSession session;
     [SerializeField] private SO_ItemData[] catalog;
     [SerializeField] private SO_IntEvent onCreditsChanged;
-    [SerializeField] private SO_IntEvent onHealRequested;
+    [SerializeField] private SO_HealingRequestEvent onHealingRequested;
+    [SerializeField] private SO_QuestProgressEvent onQuestProgressRequested;
+    [SerializeField] private int capacity = 20;
     public int Count => session != null ? session.Data.Inventory.Count : 0;
+    /// <summary>Returns a stable stack identity for an inventory interaction.</summary>
+    public InventorySlotData Slot(int index) => index >= 0 && index < Count ? session.Data.Inventory[index] : null;
+    /// <summary>Resolves a captured stack after concurrent inventory changes, or cancels if removed.</summary>
+    public int IndexOf(InventorySlotData slot) => InventoryMath.Resolve(session != null ? session.Data.Inventory : null, slot);
+    /// <summary>Claims only the pending boss rewards that fit; others remain saved for later.</summary>
+    public void ClaimRewards()
+    {
+        for (int i = session.Data.PendingRewards.Count - 1; i >= 0; i--)
+        {
+            var reward = session.Data.PendingRewards[i]; SO_ItemData definition = null;
+            foreach (var item in catalog) if (item != null && item.name == reward.ItemId) { definition = item; break; }
+            if (definition != null && RewardLedger.TryClaim(session.Data, reward.RewardId, definition.MaxStack, capacity))
+                onQuestProgressRequested?.Raise(ObjectiveType.CollectItem, reward.ItemId, reward.Quantity);
+        }
+    }
     /// <summary>Resolves the nth consumable without allocating a filtered list.</summary>
     public int ConsumableIndex(int ordinal)
     {
@@ -44,8 +61,8 @@ public sealed class SO_InventoryAccess : ScriptableObject
     public bool Use(int index)
     {
         var item = Item(index);
-        if (item == null || item.Category != ItemCategory.Consumable || onHealRequested == null || !onHealRequested.HasListeners) return false;
-        onHealRequested.Raise(25); RemoveOne(index); return true;
+        if (item == null || item.Category != ItemCategory.Consumable || onHealingRequested == null || !onHealingRequested.TryHeal(25)) return false;
+        RemoveOne(index); return true;
     }
     /// <summary>Sells one unit while in a hub or cantina shop, saturating the credit balance.</summary>
     public bool Sell(int index)

@@ -65,7 +65,9 @@ public sealed class PlayerController : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         stateMachine = GetComponent<PlayerStateMachine>();
+        if (stateMachine == null) stateMachine = gameObject.AddComponent<PlayerStateMachine>();
         stats = GetComponent<PlayerStats>();
+        if (stats == null) stats = gameObject.AddComponent<PlayerStats>();
         jetpack = GetComponent<JetpackSystem>();
         if (animator == null) animator = GetComponent<Animator>();
         if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();

@@ -12,6 +12,7 @@ CORE="$DATA/Managed/UnityEngine/UnityEngine.CoreModule.dll"
 args+=("-r:$CORE" "$ROOT/Assets/Scripts/Utilities/Timer.cs" "$ROOT/Assets/Scripts/Utilities/WeightedSelection.cs" "$ROOT/Assets/Scripts/Core/SaveData.cs" "$ROOT/Assets/Scripts/Player/OxygenMath.cs" "$ROOT/Assets/Scripts/Diving/TensionMath.cs" "$ROOT/Assets/Scripts/Combat/DamageSystem.cs" "$ROOT/Assets/Scripts/Cantina/ServiceMath.cs" "$ROOT/Assets/Scripts/Economy/UpgradeCostCurve.cs" "$ROOT/Assets/Scripts/Bosses/BossPhaseMath.cs" "$ROOT/Tools/Tests/CoreTests.cs")
 args+=("$ROOT/Assets/Scripts/UI/InventoryMath.cs")
 args+=("$ROOT/Assets/Scripts/Camera/TraumaMath.cs" "$ROOT/Assets/Scripts/Quests/QuestProgressMath.cs")
+args+=("$ROOT/Assets/Scripts/Core/GameState.cs" "$ROOT/Assets/Scripts/Core/CheckpointPolicy.cs" "$ROOT/Assets/Scripts/Core/PhaseClockMath.cs" "$ROOT/Assets/Scripts/Core/RewardLedger.cs" "$ROOT/Assets/Scripts/Cantina/KitchenQueueMath.cs" "$ROOT/Tools/Tests/ReviewRegressionTests.cs")
 "$DATA/DotNetSdk/dotnet" "$CSC" "${args[@]}"
 cp "$CORE" "$OUT/"
 cp "$ROOT/Tools/Tests/CoreTests.runtimeconfig.json" "$OUT/"
