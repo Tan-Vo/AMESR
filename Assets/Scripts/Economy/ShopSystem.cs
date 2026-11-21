@@ -6,6 +6,7 @@ public sealed class ShopSystem : MonoBehaviour
     [SerializeField] private SO_UpgradeData[] availableUpgrades;
     [SerializeField] private SO_IntEvent onCreditsChanged;
     [SerializeField] private SO_IntEvent onUpgradeChanged;
+    [SerializeField] private SO_QuestProgressEvent onQuestProgressRequested;
     /// <summary>Returns the exponential price for the next upgrade level.</summary>
     public int GetUpgradeCost(SO_UpgradeData upgrade)
     {
@@ -24,6 +25,7 @@ public sealed class ShopSystem : MonoBehaviour
         session.Data.UpgradeLevels[upgrade.name] = level + 1;
         onCreditsChanged?.Raise(session.Data.Credits);
         onUpgradeChanged?.Raise((int)upgrade.Category);
+        onQuestProgressRequested?.Raise(ObjectiveType.UpgradeGear, "", level + 1);
         return true;
     }
     /// <summary>Sells owned units of an item without allowing negative inventory.</summary>

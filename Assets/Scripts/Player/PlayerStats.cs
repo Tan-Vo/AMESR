@@ -14,6 +14,7 @@ public sealed class PlayerStats : MonoBehaviour, IDamageable
     [SerializeField] private SO_GameEvent onPlayerHurt;
     [SerializeField] private SO_IntEvent onPlayerDamageRequested;
     [SerializeField] private SO_IntEvent onHealRequested;
+    [SerializeField] private SO_GearProfile gear;
     private PlayerStateMachine stateMachine;
     private float invulnerability;
     public int CurrentHP { get; private set; }
@@ -26,6 +27,7 @@ public sealed class PlayerStats : MonoBehaviour, IDamageable
     private void Awake()
     {
         stateMachine = GetComponent<PlayerStateMachine>();
+        if (gear != null) { maxOxygen = gear.OxygenCapacity; maxFuel = gear.FuelCapacity; }
         CurrentHP = Mathf.Max(1, maxHP);
         CurrentOxygen = Mathf.Max(1f, maxOxygen);
         CurrentFuel = Mathf.Max(1f, maxFuel);

@@ -121,6 +121,7 @@ public static partial class CosmicHorizonProjectBuilder
         BuildEcosystemData();
         BuildCantinaData();
         BuildBossData();
+        BuildPolishData();
         BuildUIData();
     }
 
@@ -133,9 +134,11 @@ public static partial class CosmicHorizonProjectBuilder
         {
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             BuildUIWidgets();
+            var worldPrefabs = BuildWorldSystemsPrefabs();
             var game = new GameObject("GameManager");
             var manager = game.AddComponent<GameManager>();
             WireChannels(manager);
+            Set(manager, "starterSupply", Ensure<SO_ItemData>("Data/SO_Medkit"));
             WireChannels(game.AddComponent<UIFlowRouter>());
             var clock = game.AddComponent<DayNightCycleManager>();
             WireChannels(clock);
@@ -175,11 +178,16 @@ public static partial class CosmicHorizonProjectBuilder
                 Scene scene = AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null
                     ? EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single)
                     : EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+                EditorSceneManager.SaveScene(scene, path);
                 if (names[i] != "SC_BossArena")
                 {
                     EnsureScenePrefab<GameManager>(scene, gamePrefab);
                     EnsureScenePrefab<SaveLoadManager>(scene, savePrefab);
                     EnsureScenePrefab<SceneTransitionManager>(scene, transitionPrefab);
+                    EnsureScenePrefab<AudioManager>(scene, worldPrefabs[0]);
+                    EnsureScenePrefab<QuestManager>(scene, worldPrefabs[1]);
+                    EnsureScenePrefab<TutorialManager>(scene, worldPrefabs[2]);
+                    EnsureScenePrefab<CurrencyManager>(scene, worldPrefabs[3]);
                     if (!scene.GetRootGameObjects().Any(root => root.GetComponent<Camera>() != null))
                     {
                         var camera = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
@@ -198,6 +206,7 @@ public static partial class CosmicHorizonProjectBuilder
                 if (names[i] == "SC_NebulaCantina") BuildCantinaScene(scene, playerPrefab, customerPrefab);
                 if (names[i] == "SC_BossArena") BuildBossArena(scene, bossPrefabs);
                 BuildSceneUI(scene);
+                BuildScenePolish(scene);
                 EditorSceneManager.SaveScene(scene, path);
                 buildScenes[i] = new EditorBuildSettingsScene(path, true);
             }

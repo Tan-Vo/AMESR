@@ -12,6 +12,15 @@ public sealed class InventorySlotData
 }
 
 [Serializable]
+public sealed class QuestProgressData
+{
+    [SerializeField] private string key;
+    [SerializeField] private int amount;
+    public string Key { get => key; set => key = value; }
+    public int Amount { get => amount; set => amount = value; }
+}
+
+[Serializable]
 public sealed class SaveData : ISerializationCallbackReceiver
 {
     [SerializeField] private int version = 1;
@@ -23,6 +32,8 @@ public sealed class SaveData : ISerializationCallbackReceiver
     [SerializeField] private List<string> unlockedRecipeIds = new();
     [SerializeField] private List<string> completedQuestIds = new();
     [SerializeField] private List<string> defeatedBossIds = new();
+    [SerializeField] private List<QuestProgressData> questProgress = new();
+    [SerializeField] private int tutorialStep;
     [SerializeField] private float totalPlayTime;
     [SerializeField] private List<string> upgradeKeys = new();
     [SerializeField] private List<int> upgradeValues = new();
@@ -36,6 +47,8 @@ public sealed class SaveData : ISerializationCallbackReceiver
     public List<string> UnlockedRecipeIds => unlockedRecipeIds;
     public List<string> CompletedQuestIds => completedQuestIds;
     public List<string> DefeatedBossIds => defeatedBossIds;
+    public List<QuestProgressData> QuestProgress => questProgress ??= new();
+    public int TutorialStep { get => tutorialStep; set => tutorialStep = value; }
     public Dictionary<string, int> UpgradeLevels => upgradeLevels;
     public float TotalPlayTime { get => totalPlayTime; set => totalPlayTime = value; }
 
@@ -61,6 +74,9 @@ public sealed class SaveData : ISerializationCallbackReceiver
             float.IsNaN(totalPlayTime) || float.IsInfinity(totalPlayTime) || totalPlayTime < 0 ||
             inventory == null || unlockedRecipeIds == null || completedQuestIds == null || defeatedBossIds == null ||
             upgradeKeys == null || upgradeValues == null || upgradeKeys.Count != upgradeValues.Count) return false;
+        if (tutorialStep < 0 || tutorialStep > 10) return false;
+        if (questProgress != null) foreach (var entry in questProgress)
+            if (entry == null || string.IsNullOrEmpty(entry.Key) || entry.Amount < 0) return false;
         foreach (var slot in inventory)
             if (slot == null || string.IsNullOrEmpty(slot.ItemId) || slot.Quantity <= 0) return false;
         foreach (var pair in upgradeLevels)

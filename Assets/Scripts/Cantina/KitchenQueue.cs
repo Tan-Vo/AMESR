@@ -5,6 +5,7 @@ public sealed class KitchenQueue : MonoBehaviour
 {
     [SerializeField] private SO_SaveSession session;
     [SerializeField] private SpriteRenderer readyDish;
+    [SerializeField] private SO_GameEvent onDishReady;
     private readonly Queue<SO_DishRecipe> orders = new(32);
     private readonly Queue<SO_DishRecipe> ready = new(32);
     private readonly SO_DishRecipe[] cooking = new SO_DishRecipe[3];
@@ -27,7 +28,7 @@ public sealed class KitchenQueue : MonoBehaviour
             { cooking[i] = orders.Dequeue(); remaining[i] = Mathf.Max(0.1f, cooking[i].CookTime / (1f + level * 0.15f)); }
             if (cooking[i] == null) continue;
             remaining[i] -= Time.deltaTime;
-            if (remaining[i] <= 0f) { ready.Enqueue(cooking[i]); cooking[i] = null; }
+            if (remaining[i] <= 0f) { ready.Enqueue(cooking[i]); cooking[i] = null; onDishReady?.Raise(); }
         }
     }
     private void LateUpdate()

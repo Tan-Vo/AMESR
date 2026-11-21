@@ -6,6 +6,7 @@ public abstract class WeaponBase : MonoBehaviour
     [SerializeField] private Transform firePoint;
     [SerializeField] private ProjectilePool projectilePool;
     [SerializeField] private SO_DamageEvent onDamageRequested;
+    [SerializeField] private SO_AudioCueEvent onAudioCueRequested;
     private float cooldown;
     private float reloadRemaining;
     public virtual SO_WeaponData Data => data;
@@ -29,6 +30,7 @@ public abstract class WeaponBase : MonoBehaviour
         bool consumesAmmo = !data.IsMelee && data.WeaponType != WeaponType.Harpoon;
         if (consumesAmmo && CurrentAmmo <= 0) { Reload(); return false; }
         if (!Shoot(direction.normalized)) return false;
+        if (data.WeaponType != WeaponType.Harpoon) onAudioCueRequested?.Raise(SfxType.Shoot);
         if (consumesAmmo) CurrentAmmo--;
         cooldown = 1f / Mathf.Max(0.01f, data.FireRate);
         return true;

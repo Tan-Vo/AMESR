@@ -32,7 +32,8 @@ public static partial class CosmicHorizonProjectBuilder
         var animator = player.AddComponent<Animator>();
         animator.runtimeAnimatorController = BuildPlayerAnimator();
         player.AddComponent<PlayerStateMachine>();
-        WireChannels(player.AddComponent<PlayerStats>());
+        var stats = player.AddComponent<PlayerStats>(); WireChannels(stats);
+        Set(stats, "gear", Ensure<SO_GearProfile>("Data/SO_GearProfile"));
         WireChannels(player.AddComponent<DiveCargo>());
         var controller = player.AddComponent<PlayerController>();
         WireChannels(controller);

@@ -18,6 +18,8 @@ public sealed class CantinaManager : MonoBehaviour
     [SerializeField] private SO_GameEvent onNightEnded;
     [SerializeField] private SO_GameEvent onDishServed;
     [SerializeField] private SO_GameEvent onCustomerLeft;
+    [SerializeField] private SO_QuestProgressEvent onQuestProgressRequested;
+    [SerializeField] private SO_StringEvent onQuestFailureRequested;
     [SerializeField] private SO_FloatingTextEvent onFloatingTextRequested;
     private readonly List<SO_DishRecipe> menu = new(5);
     private readonly Dictionary<SO_DishRecipe, int> batchRemainders = new();
@@ -131,13 +133,15 @@ public sealed class CantinaManager : MonoBehaviour
         served++; revenue += price; tips += tip;
         dishSales.TryGetValue(customer.Order, out int sales); dishSales[customer.Order] = sales + price;
         onCreditsAdded?.Raise(price + tip);
+        onQuestProgressRequested?.Raise(ObjectiveType.ServeCustomers, angry == 0 ? "NoAngry" : "", 1);
+        onQuestProgressRequested?.Raise(ObjectiveType.EarnCredits, "", price + tip);
         onReputationRequested?.Raise(ServiceMath.Reputation(customer.Type));
         onFloatingTextRequested?.Raise(customer.transform.position, "+" + (price + tip) + " Credits", Color.yellow);
     }
     /// <summary>Penalizes an angry departure using the reputation system's two-point rule.</summary>
     public void Angry(CustomerAI customer)
     {
-        angry++; onReputationRequested?.Raise(-2);
+        angry++; onReputationRequested?.Raise(-2); onQuestFailureRequested?.Raise("NoAngry");
         onFloatingTextRequested?.Raise(customer.transform.position, "-★", Color.red);
     }
     /// <summary>Returns a finished visit and closes service when all waves have departed.</summary>

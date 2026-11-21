@@ -8,6 +8,13 @@ public sealed class SO_InventoryAccess : ScriptableObject
     [SerializeField] private SO_IntEvent onCreditsChanged;
     [SerializeField] private SO_IntEvent onHealRequested;
     public int Count => session != null ? session.Data.Inventory.Count : 0;
+    /// <summary>Resolves the nth consumable without allocating a filtered list.</summary>
+    public int ConsumableIndex(int ordinal)
+    {
+        if (ordinal < 0) return -1;
+        for (int i = 0; i < Count; i++) if (Item(i)?.Category == ItemCategory.Consumable && ordinal-- == 0) return i;
+        return -1;
+    }
     /// <summary>Resolves an owned slot to its item definition.</summary>
     public SO_ItemData Item(int index)
     {

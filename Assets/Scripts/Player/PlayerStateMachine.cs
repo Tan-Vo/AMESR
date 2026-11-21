@@ -40,9 +40,10 @@ public sealed class PlayerStateMachine : MonoBehaviour
         public void Exit() { }
     }
     private readonly Dictionary<PlayerState, IPlayerState> states = new();
+    private float stunRemaining;
     public PlayerState CurrentState { get; private set; }
     public bool InWater { get; set; }
-    public bool MovementLocked => CurrentState == PlayerState.Dead || CurrentState == PlayerState.Hurt ||
+    public bool MovementLocked => stunRemaining > 0f || CurrentState == PlayerState.Dead || CurrentState == PlayerState.Hurt ||
         CurrentState == PlayerState.Mining || CurrentState == PlayerState.Interacting;
     public bool IsLocomotion => CurrentState <= PlayerState.Jetpacking;
     private void Awake()
@@ -50,7 +51,9 @@ public sealed class PlayerStateMachine : MonoBehaviour
         foreach (PlayerState value in System.Enum.GetValues(typeof(PlayerState))) states[value] = new State(this, value);
         states[CurrentState].Enter();
     }
-    private void Update() { states[CurrentState].Execute(); }
+    private void Update() { stunRemaining = Mathf.Max(0f, stunRemaining - Time.deltaTime); states[CurrentState].Execute(); }
+    /// <summary>Locks movement and attacks for a bounded contact stun.</summary>
+    public void Stun(float seconds) { stunRemaining = Mathf.Max(stunRemaining, seconds); }
     private void FixedUpdate() { states[CurrentState].FixedExecute(); }
     /// <summary>Transitions to a registered state; death cannot be interrupted.</summary>
     public void ChangeState(PlayerState next)

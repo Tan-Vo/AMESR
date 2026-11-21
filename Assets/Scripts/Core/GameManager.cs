@@ -17,6 +17,7 @@ public sealed class GameManager : Singleton<GameManager>
     [SerializeField] private SO_StringEvent onSceneLoaded;
     [SerializeField] private SO_StringEvent onSceneFailed;
     [SerializeField] private SO_SaveSession session;
+    [SerializeField] private SO_ItemData starterSupply;
     [SerializeField] private float divingTimeLimitSeconds = 300f;
     [SerializeField] private float cantinaTimeLimitSeconds = 180f;
     private GameState currentState = GameState.MainMenu;
@@ -89,6 +90,7 @@ public sealed class GameManager : Singleton<GameManager>
     {
         if (pendingScene != null) return;
         session?.Replace(new SaveData());
+        if (session != null && starterSupply != null) session.Data.Inventory.Add(new InventorySlotData { ItemId = starterSupply.name, Quantity = 2 });
         currentDay = 1;
         Load("SC_Mothership", GameState.MorningBrief);
     }

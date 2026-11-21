@@ -102,6 +102,7 @@ public static partial class CosmicHorizonProjectBuilder
         canvas.GetComponent<Canvas>().sortingOrder = 200;
         var label = ServiceText(canvas.transform, "BossStatus", new Vector2(0, 420), new Vector2(1500, 80), 24);
         var phases = root.AddComponent<BossPhaseManager>();
+        WireChannels(phases);
         Set(phases, "arena", director, "bossLabel", label);
     }
     private static void ArenaWall(Transform root, string name, Vector2 position, Vector2 size)

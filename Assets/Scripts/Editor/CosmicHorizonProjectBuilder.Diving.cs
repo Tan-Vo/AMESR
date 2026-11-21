@@ -73,6 +73,7 @@ public static partial class CosmicHorizonProjectBuilder
         firePoint.SetParent(player.transform, false);
         firePoint.localPosition = new Vector3(0, 0.15f, 0);
         var harpoon = player.AddComponent<HarpoonSystem>();
+        Set(harpoon, "gear", Ensure<SO_GearProfile>("Data/SO_GearProfile"));
         WireChannels(harpoon);
         Set(harpoon, "equippedHarpoon", Ensure<SO_WeaponData>("Data/SO_BasicHarpoon"), "firePoint", firePoint,
             "harpoonPool", pool, "targetMask", (1 << 7) | (1 << 9) | (1 << 10),

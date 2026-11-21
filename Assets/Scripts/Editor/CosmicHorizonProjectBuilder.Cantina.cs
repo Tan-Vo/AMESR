@@ -51,6 +51,8 @@ public static partial class CosmicHorizonProjectBuilder
         canvas.transform.localPosition = Vector3.up * 1.35f;
         canvas.transform.localScale = Vector3.one * 0.01f;
         var meter = DiveMeter(canvas.transform, "PatienceMeter", Vector2.zero, true);
+        meter.sprite = SpriteAt("UI/hud_target_crosshair_radar_01.png"); meter.fillMethod = Image.FillMethod.Radial360;
+        meter.rectTransform.sizeDelta = new Vector2(56, 56);
         meter.rectTransform.anchorMin = meter.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         meter.rectTransform.anchoredPosition = Vector2.zero;
         Set(customer.GetComponent<CustomerAI>(), "orderBubble", bubble.GetComponent<SpriteRenderer>(), "patienceMeter", meter);
@@ -99,7 +101,6 @@ public static partial class CosmicHorizonProjectBuilder
         SetArray(manager, "seats", seats.Length, (p, i) => p.objectReferenceValue = seats[i]);
         Set(manager, "stock", Ensure<SO_IngredientStock>("Data/SO_IngredientStock"), "report", Ensure<SO_NightReport>("Data/SO_NightReport"),
             "kitchen", kitchen, "spawner", spawner, "entranceDoor", entrance.transform, "exitDoor", exit.transform);
-        var currency = new GameObject("CurrencyManager", typeof(CurrencyManager)); WireChannels(currency.GetComponent<CurrencyManager>());
         var shop = root.AddComponent<ShopSystem>(); WireChannels(shop);
         var upgrades = System.Enum.GetValues(typeof(UpgradeCategory)).Cast<UpgradeCategory>().Select(category => Ensure<SO_UpgradeData>("Data/SO_" + category)).ToArray();
         SetArray(shop, "availableUpgrades", upgrades.Length, (p, i) => p.objectReferenceValue = upgrades[i]);

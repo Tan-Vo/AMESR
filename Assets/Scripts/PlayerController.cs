@@ -26,6 +26,7 @@ public sealed class PlayerController : MonoBehaviour
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Sprite[] lowOxygenFrames;
     [SerializeField] private SO_PlayerEffectEvent onPlayerEffectRequested;
+    [SerializeField] private SO_GameEvent onJumped, onLanded;
     private Rigidbody2D rb;
     private PlayerStateMachine stateMachine;
     private PlayerStats stats;
@@ -55,6 +56,7 @@ public sealed class PlayerController : MonoBehaviour
     private void ApplyEffect(PlayerEffectKind kind, Vector2 value, float amount)
     {
         if (kind == PlayerEffectKind.Teleport) { teleportPosition = value; teleportPending = true; }
+        else if (kind == PlayerEffectKind.Stun) { stateMachine.Stun(amount); }
         else if (kind == PlayerEffectKind.Slow) { slowRemaining = Mathf.Max(slowRemaining, value.x); slowScale = Mathf.Clamp(amount, 0.1f, 1f); }
         else if (rb != null) externalDrift += (value - rb.position).normalized * amount;
     }
@@ -132,13 +134,14 @@ public sealed class PlayerController : MonoBehaviour
                 grounded = false;
                 coyoteTimeCounter = jumpBufferCounter = 0f;
                 stateMachine.ChangeState(PlayerState.Jumping);
+                onJumped?.Raise();
             }
             if (jumpReleased && rb.linearVelocity.y > 0f) rb.linearVelocity = rb.linearVelocity.WithY(rb.linearVelocity.y * 0.5f);
             float multiplier = rb.linearVelocity.y < 0f ? fallMultiplier : !jumpHeld ? lowJumpMultiplier : 1f;
             if (!grounded && (jetpack == null || !jetpack.IsJetpacking))
                 rb.linearVelocity += Vector2.up * Physics2D.gravity.y * rb.gravityScale * (multiplier - 1f) * Time.fixedDeltaTime;
             rb.linearVelocity = rb.linearVelocity.WithY(Mathf.Max(rb.linearVelocity.y, maxFallSpeed));
-            if (grounded && !wasGrounded) stateMachine.ChangeState(PlayerState.Landing);
+            if (grounded && !wasGrounded) { stateMachine.ChangeState(PlayerState.Landing); onLanded?.Raise(); }
         }
         jumpReleased = false;
         ApplyDrift();

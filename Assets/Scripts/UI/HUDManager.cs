@@ -9,6 +9,7 @@ public sealed class HUDManager : MonoBehaviour
     [SerializeField] private SO_WeaponHUDEvent onWeaponHUDChanged;
     [SerializeField] private SO_BiomeData[] biomes;
     [SerializeField] private Image healthFill, oxygenFill, fuelFill, weaponIcon;
+    [SerializeField] private Image depthFill;
     [SerializeField] private Text healthLabel, oxygenLabel, fuelLabel, depthLabel, creditsLabel, weaponLabel, quickLabel;
     private float hp = 1, oxygen = 1, fuel = 1, depth;
     private void OnEnable()
@@ -34,7 +35,7 @@ public sealed class HUDManager : MonoBehaviour
     private void Update()
     {
         for (int i = 0; i < 5; i++)
-            if (Input.GetKeyDown(KeyCode.F1 + i)) inventory.Use(i);
+            if (Input.GetKeyDown(KeyCode.F1 + i)) inventory.Use(inventory.ConsumableIndex(i));
     }
     private void LateUpdate()
     {
@@ -45,7 +46,7 @@ public sealed class HUDManager : MonoBehaviour
         foreach (var biome in biomes) if (depth >= biome.DepthMin && depth < biome.DepthMax) { biomeName = biome.BiomeName; depthLabel.color = biome.WaterTintColor * 2f; break; }
         depthLabel.text = depth.ToString("0") + "m • " + biomeName + "\nDAY " + session.Data.CurrentDay;
         creditsLabel.text = "₡ " + session.Data.Credits.ToString("N0");
-        quickLabel.text = "I: inventory    ";
-        for (int i = 0; i < 5; i++) { var item = inventory.Item(i); quickLabel.text += "[F" + (i + 1) + ": " + (item != null ? item.ItemName + " ×" + inventory.Quantity(i) : "—") + "] "; }
+        quickLabel.text = "I: cargo • F1–F5: consumables • Esc: pause";
+        depthFill.fillAmount = Mathf.Clamp01(depth / 3000f); depthFill.color = depthLabel.color;
     }
 }

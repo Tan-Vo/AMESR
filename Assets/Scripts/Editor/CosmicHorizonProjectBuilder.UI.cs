@@ -35,6 +35,7 @@ public static partial class CosmicHorizonProjectBuilder
     {
         Folder("Assets/Prefabs/UI");
         var button = Frame(null, "Button", Vector2.zero, new Vector2(250, 52)); button.gameObject.AddComponent<Button>().targetGraphic = button;
+        WireChannels(button.gameObject.AddComponent<UIAudioFeedback>());
         ServiceText(button.transform, "Label", Vector2.zero, new Vector2(240, 48), 20);
         PrefabUtility.SaveAsPrefabAsset(button.gameObject, "Assets/Prefabs/UI/PF_UIButton.prefab");
         var slot = Frame(null, "InventorySlot", Vector2.zero, new Vector2(84, 84)); var view = slot.gameObject.AddComponent<InventorySlotUI>();
@@ -63,26 +64,37 @@ public static partial class CosmicHorizonProjectBuilder
     }
     private static void Navigation(Transform parent, string text, Vector2 position, UICommand command)
     {
+        float depth = command == UICommand.Twilight ? 500 : command == UICommand.Abyssal ? 1500 : command == UICommand.EventHorizon ? 2500 : 0;
+        if (depth > 500) text += " ≥" + depth + "m";
         var button = UIButton(parent, text, position, null); var endpoint = button.gameObject.AddComponent<UICommandButton>(); WireChannels(endpoint);
-        Set(endpoint, "command", (int)command); UnityEventTools.AddPersistentListener(button.onClick, endpoint.Click);
+        Set(endpoint, "command", (int)command, "gear", Ensure<SO_GearProfile>("Data/SO_GearProfile"), "requiredDepth", depth); UnityEventTools.AddPersistentListener(button.onClick, endpoint.Click);
     }
     private static GameObject UISettings(Transform parent)
     {
         var panel = Frame(parent, "Settings", Vector2.zero, new Vector2(850, 650)); var settings = panel.gameObject.AddComponent<SettingsUI>();
+        WireChannels(settings);
         var resources = new DefaultControls.Resources { standard = UIFrame, background = UIFrame, inputField = UIFrame, knob = UIFrame, checkmark = UIFrame, dropdown = UIFrame, mask = UIFrame };
         ServiceText(panel.transform, "Title", new Vector2(0, 260), new Vector2(700, 50), 30).text = "SETTINGS";
-        ServiceText(panel.transform, "VolumeLabel", new Vector2(-240, 140), new Vector2(200, 40)).text = "Master Volume";
+        ServiceText(panel.transform, "VolumeLabel", new Vector2(-240, 160), new Vector2(200, 40)).text = "Master Volume";
         var sliderObj = DefaultControls.CreateSlider(resources); sliderObj.transform.SetParent(panel.transform, false);
-        sliderObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(50, 140);
+        sliderObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(50, 160);
         var slider = sliderObj.GetComponent<Slider>(); UnityEventTools.AddPersistentListener(slider.onValueChanged, settings.Volume);
+        var musicObj = DefaultControls.CreateSlider(resources); musicObj.transform.SetParent(panel.transform, false);
+        musicObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(50, 95);
+        var music = musicObj.GetComponent<Slider>(); UnityEventTools.AddPersistentListener(music.onValueChanged, settings.BgmVolume);
+        ServiceText(panel.transform, "MusicLabel", new Vector2(-240, 95), new Vector2(200, 40)).text = "Music Volume";
+        var effectsObj = DefaultControls.CreateSlider(resources); effectsObj.transform.SetParent(panel.transform, false);
+        effectsObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(50, 30);
+        var effects = effectsObj.GetComponent<Slider>(); UnityEventTools.AddPersistentListener(effects.onValueChanged, settings.SfxVolume);
+        ServiceText(panel.transform, "EffectsLabel", new Vector2(-240, 30), new Vector2(200, 40)).text = "Effects Volume";
         var dropdownObj = DefaultControls.CreateDropdown(resources); dropdownObj.transform.SetParent(panel.transform, false);
-        dropdownObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, 40); dropdownObj.GetComponent<RectTransform>().sizeDelta = new Vector2(500, 45);
+        dropdownObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -70); dropdownObj.GetComponent<RectTransform>().sizeDelta = new Vector2(500, 45);
         var dropdown = dropdownObj.GetComponent<Dropdown>(); UnityEventTools.AddPersistentListener(dropdown.onValueChanged, settings.Resolution);
         var toggleObj = DefaultControls.CreateToggle(resources); toggleObj.transform.SetParent(panel.transform, false);
-        toggleObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -60);
+        toggleObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(0, -150);
         toggleObj.GetComponentInChildren<Text>().text = "Fullscreen"; var toggle = toggleObj.GetComponent<Toggle>();
         UnityEventTools.AddPersistentListener(toggle.onValueChanged, settings.Fullscreen);
-        Set(settings, "volume", slider, "resolution", dropdown, "fullscreen", toggle);
+        Set(settings, "volume", slider, "bgm", music, "sfx", effects, "resolution", dropdown, "fullscreen", toggle);
         UIButton(panel.transform, "Close", new Vector2(0, -220), settings.Close); panel.gameObject.SetActive(false); return panel.gameObject;
     }
     private static void BuildSceneUI(Scene scene)
@@ -132,7 +144,8 @@ public static partial class CosmicHorizonProjectBuilder
         else Navigation(root, "Return to hub", new Vector2(760, -450), UICommand.Hub);
         BuildHUD(root);
         BuildInventory(root, scene.name == "SC_Mothership" || scene.name == "SC_NebulaCantina");
-        var pausePanel = Frame(root, "Pause", Vector2.zero, new Vector2(800, 800)); var pause = obj.AddComponent<PauseMenuUI>(); WireChannels(pause);
+        var pausePanel = Frame(root, "Pause", Vector2.zero, new Vector2(1920, 1080)); pausePanel.color = new Color(0.08f, 0.12f, 0.2f, 0.94f);
+        var pause = obj.AddComponent<PauseMenuUI>(); WireChannels(pause);
         Set(pause, "panel", pausePanel.gameObject, "settings", settings);
         UnityAction[] actions = { pause.Resume, pause.Settings, pause.Save, pause.Load, pause.Quit };
         string[] labels = { "Resume", "Settings", "Save", "Load", "Quit to menu" };
@@ -143,6 +156,18 @@ public static partial class CosmicHorizonProjectBuilder
     {
         var hud = root.gameObject.AddComponent<HUDManager>(); WireChannels(hud); Set(hud, "inventory", Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess"));
         SetArray(hud, "biomes", 4, (p, i) => p.objectReferenceValue = BiomeAssets()[i]);
+        var depthGauge = Frame(root, "DepthGauge", new Vector2(920, 330), new Vector2(22, 230)); depthGauge.raycastTarget = false;
+        depthGauge.type = Image.Type.Filled; depthGauge.fillMethod = Image.FillMethod.Vertical; Set(hud, "depthFill", depthGauge);
+        for (int i = 0; i < 5; i++)
+        {
+            var button = UIButton(root, "", new Vector2(-180 + i * 90, -475), null); button.GetComponent<RectTransform>().sizeDelta = new Vector2(80, 64);
+            var quick = button.gameObject.AddComponent<QuickSlotUI>();
+            Set(quick, "inventory", Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess"), "index", i,
+                "icon", UIIcon(button.transform, "Consumable", new Vector2(0, 8), new Vector2(40, 40), null),
+                "label", button.GetComponentInChildren<Text>());
+            button.GetComponentInChildren<Text>().rectTransform.anchoredPosition = new Vector2(0, -20);
+            UnityEventTools.AddPersistentListener(button.onClick, quick.Use);
+        }
         string[] names = { "health", "oxygen", "fuel" };
         Color[] colors = { Color.red, Color.cyan, new Color(1f, 0.6f, 0.1f) };
         for (int i = 0; i < 3; i++)

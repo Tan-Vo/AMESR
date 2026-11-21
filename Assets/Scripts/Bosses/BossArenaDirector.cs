@@ -6,6 +6,7 @@ public sealed class BossArenaDirector : MonoBehaviour
     [SerializeField] private SO_PlayerEffectEvent onPlayerEffectRequested;
     [SerializeField] private SO_IntEvent onPlayerDamageRequested;
     [SerializeField] private SO_SaveSession session;
+    [SerializeField] private SO_QuestProgressEvent onQuestProgressRequested;
     [SerializeField] private SO_GameEvent onPlayerDied;
     [SerializeField] private SO_GameEvent onEmergencySurface;
     [SerializeField] private SO_LootSpawnEvent onLootSpawnRequested;
@@ -92,6 +93,7 @@ public sealed class BossArenaDirector : MonoBehaviour
         string id = onBossEncounterRequested.Kind.ToString();
         bool first = !session.Data.DefeatedBossIds.Contains(id);
         if (first) session.Data.DefeatedBossIds.Add(id);
+        if (first) onQuestProgressRequested?.Raise(ObjectiveType.DefeatBoss, id, 1);
         Vector3 position = boss.transform.position;
         ClearCombat();
         Spawn(BossAttackKind.Explosion, position, Vector2.zero, 0, 0, 4f, 1f, 0f, boss.AttackSprite);

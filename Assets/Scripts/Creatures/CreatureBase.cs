@@ -9,6 +9,7 @@ public class CreatureBase : MonoBehaviour, IDamageable
     [SerializeField] private SO_CreatureEvent onCreatureReleased;
     [SerializeField] private SO_LootSpawnEvent onLootSpawnRequested;
     [SerializeField] private SO_GameEvent onCreatureCaught;
+    [SerializeField] private SO_QuestProgressEvent onQuestProgressRequested;
     [SerializeField] private SO_IntEvent onPlayerDamageRequested;
     protected Rigidbody2D Body { get; private set; }
     protected Transform Player { get; private set; }
@@ -123,6 +124,7 @@ public class CreatureBase : MonoBehaviour, IDamageable
         StateTimer = 0.2f;
         stopPending = true;
         onCreatureCaught?.Raise();
+        onQuestProgressRequested?.Raise(ObjectiveType.CatchCreature, data.name, 1);
     }
     /// <summary>Stuns a living creature for a bounded duration.</summary>
     public void Stun(float seconds)

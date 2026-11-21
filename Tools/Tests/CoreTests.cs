@@ -150,6 +150,24 @@ internal static class CoreTests
         rejected = false;
         try { InventoryMath.Transfer(-1, 0, 99); } catch (ArgumentOutOfRangeException) { rejected = true; }
         Check(rejected, "invalid inventory quantity rejected");
-        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (core + diving + combat + service/reputation/upgrade + boss + inventory math; no Unity runtime).");
+        Check(TraumaMath.Amplitude(0.5f) == 0.25f && TraumaMath.Amplitude(0) == 0, "quadratic shake amplitude");
+        Check(TraumaMath.Decay(0.8f, 0.25f, 2f) > 0.299f && TraumaMath.Decay(0.8f, 0.25f, 2f) < 0.301f, "trauma decays");
+        Check(TraumaMath.Decay(0, 1, 1) == 0 && TraumaMath.Decay(3, 0, 1) == 1, "empty and excessive trauma clamped");
+        rejected = false;
+        try { TraumaMath.Decay(float.NaN, 0, 1); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "invalid trauma rejected");
+        Check(QuestProgressMath.Advance(2, 1, 3, false) == 3, "quest counter accumulates");
+        Check(QuestProgressMath.Advance(200, 20, 500, true) == 200, "depth milestone never regresses");
+        Check(QuestProgressMath.Advance(0, 0, 3, false) == 0, "empty quest progress");
+        Check(QuestProgressMath.Advance(int.MaxValue, int.MaxValue, 10, false) == 10, "quest progress saturates without overflow");
+        rejected = false;
+        try { QuestProgressMath.Advance(0, -1, 3, false); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "invalid quest action rejected");
+        var questSave = new SaveData { TutorialStep = 10 };
+        questSave.QuestProgress.Add(new QuestProgressData { Key = "SO_Quest01:0", Amount = 2 });
+        Check(questSave.IsValid(), "quest and tutorial save valid");
+        questSave.TutorialStep = 11;
+        Check(!questSave.IsValid(), "invalid tutorial step rejected");
+        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (core + diving + combat + service/reputation/upgrade + boss + inventory + trauma + quest math; no Unity runtime).");
     }
 }

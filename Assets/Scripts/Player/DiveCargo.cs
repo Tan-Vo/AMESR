@@ -7,6 +7,7 @@ public sealed class DiveCargo : MonoBehaviour
     [SerializeField] private SO_SaveSession session;
     [SerializeField] private SO_FloatEvent onLootPenalty;
     [SerializeField] private SO_ItemCollectionEvent onItemCollectionRequested;
+    [SerializeField] private SO_QuestProgressEvent onQuestProgressRequested;
     private readonly Dictionary<string, int> startingAmounts = new();
     private readonly Dictionary<string, int> currentAmounts = new();
     private readonly Dictionary<string, int> losses = new();
@@ -32,6 +33,7 @@ public sealed class DiveCargo : MonoBehaviour
         long room = (long)Mathf.Max(0, stats.InventoryCapacity - inventory.Count) * stack;
         foreach (var slot in inventory) if (slot.ItemId == item.name) room += Mathf.Max(0, stack - slot.Quantity);
         if (room < quantity) return false;
+        int collected = quantity;
         foreach (var slot in inventory)
         {
             if (slot.ItemId != item.name) continue;
@@ -45,6 +47,7 @@ public sealed class DiveCargo : MonoBehaviour
             inventory.Add(new InventorySlotData { ItemId = item.name, Quantity = add });
             quantity -= add;
         }
+        onQuestProgressRequested?.Raise(ObjectiveType.CollectItem, item.name, collected);
         return true;
     }
     private void ApplyPenalty(float fraction)

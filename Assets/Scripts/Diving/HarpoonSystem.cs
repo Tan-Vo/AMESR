@@ -11,6 +11,8 @@ public sealed class HarpoonSystem : MonoBehaviour
     [SerializeField] private LineRenderer cableRenderer;
     [SerializeField] private float maxCableLength = 15f;
     [SerializeField] private float reelBaseSpeed = 3f;
+    [SerializeField] private SO_GearProfile gear;
+    [SerializeField] private SO_GameEvent onHarpoonFired;
     [SerializeField] private LayerMask targetMask;
     [SerializeField] private HarpoonPool harpoonPool;
     [SerializeField] private SO_DiveInteractionEvent onDiveInteraction;
@@ -59,6 +61,7 @@ public sealed class HarpoonSystem : MonoBehaviour
             if (tip != null)
             {
                 tip.Launch(firePoint.position, aim, equippedHarpoon.ProjectileSpeed, maxCableLength, targetMask, equippedHarpoon.ProjectileSprite, hitCallback);
+                onHarpoonFired?.Raise();
                 states.ChangeState(PlayerState.HarpoonAiming);
                 cooldown = 1f / Mathf.Max(0.1f, equippedHarpoon.FireRate);
             }
@@ -73,7 +76,7 @@ public sealed class HarpoonSystem : MonoBehaviour
         tugDuration -= Time.fixedDeltaTime;
         tension = TensionMath.Step(tension, held, tug, tapped, Time.fixedDeltaTime);
         if (tension >= 1f) { Snap(); return; }
-        float speed = held ? TensionMath.ReelSpeed(reelBaseSpeed, body.mass, hooked.Mass, tension, tapped) : 0f;
+        float speed = held ? TensionMath.ReelSpeed(reelBaseSpeed * (gear != null ? gear.HarpoonMultiplier : 1f), body.mass, hooked.Mass, tension, tapped) : 0f;
         Vector2 away = (hooked.Position - body.position).normalized;
         onDiveInteraction.Pull(hooked, hooked.Position + away * ((tug ? 1.2f : 0f) - speed) * Time.fixedDeltaTime);
         tapped = false;
@@ -87,7 +90,7 @@ public sealed class HarpoonSystem : MonoBehaviour
     {
         if (projectile != tip) return;
         if (collider != null && equippedHarpoon != null)
-            onDamageRequested?.Hit(collider, equippedHarpoon.BaseDamage, 1f, equippedHarpoon.HarpoonEffect);
+            onDamageRequested?.Hit(collider, equippedHarpoon.BaseDamage, gear != null ? gear.HarpoonMultiplier : 1f, equippedHarpoon.HarpoonEffect);
         hooked = onDiveInteraction != null ? onDiveInteraction.Resolve(collider) : null;
         harpoonPool.Return(tip);
         tip = null;

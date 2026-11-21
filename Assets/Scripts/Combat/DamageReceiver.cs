@@ -2,6 +2,7 @@ using UnityEngine;
 
 public sealed class DamageReceiver : MonoBehaviour
 {
+    [SerializeField] private SO_GearProfile gear;
     [SerializeField] private MonoBehaviour damageable;
     [SerializeField] private Collider2D hitbox;
     [SerializeField] private int armor;
@@ -23,7 +24,7 @@ public sealed class DamageReceiver : MonoBehaviour
         if (!IsAlive || target is IDamageGate gate && !gate.CanTakeDamage) return;
         int bonus = effect == HarpoonEffect.BlazingPlasma ? 5 :
             effect == HarpoonEffect.DarkMatter && (CompareTag("Boss") || creature != null && creature.Data.BehaviorType == CreatureBehavior.Boss) ? 10 : 0;
-        int resolved = DamageSystem.CalculateDamage((int)System.Math.Min(int.MaxValue, (long)damage + bonus), multiplier, effect == HarpoonEffect.DarkMatter ? 0 : armor);
+        int resolved = DamageSystem.CalculateDamage((int)System.Math.Min(int.MaxValue, (long)damage + bonus), multiplier, effect == HarpoonEffect.DarkMatter ? 0 : armor + (IsPlayer && gear != null ? gear.Armor : 0));
         target.TakeDamage(resolved);
         onFloatingTextRequested?.Raise(transform.position + Vector3.up * 0.6f, resolved.ToString(), Color.yellow);
         if (creature == null || !creature.IsAlive) return;

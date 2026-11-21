@@ -26,6 +26,7 @@ public sealed class BossEncounterLoader : MonoBehaviour
         onBossDefeated?.UnregisterListener(Victory);
         onPlayerDied?.UnregisterListener(Failure);
         onEmergencySurface?.UnregisterListener(Failure);
+        if (onBossEncounterRequested != null && onBossEncounterRequested.InProgress) onBossEncounterRequested.Clear();
     }
     private void Begin() { if (!loading && !ending) StartCoroutine(Load()); }
     private IEnumerator Load()

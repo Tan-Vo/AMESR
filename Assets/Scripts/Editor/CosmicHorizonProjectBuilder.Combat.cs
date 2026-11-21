@@ -38,6 +38,7 @@ public static partial class CosmicHorizonProjectBuilder
         var receiver = obj.AddComponent<DamageReceiver>();
         WireChannels(receiver);
         Set(receiver, "damageable", target, "hitbox", obj.GetComponent<Collider2D>());
+        if (target is PlayerStats) Set(receiver, "gear", Ensure<SO_GearProfile>("Data/SO_GearProfile"));
     }
     private static ProjectilePool BuildCombatPools(GameObject player)
     {

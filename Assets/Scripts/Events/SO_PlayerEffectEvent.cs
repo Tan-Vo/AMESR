@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public enum PlayerEffectKind { Pull, Slow, Teleport }
+public enum PlayerEffectKind { Pull, Slow, Teleport, Stun }
 
 [CreateAssetMenu(menuName = "Cosmic Horizon/Events/Player Motion Effect")]
 public sealed class SO_PlayerEffectEvent : ScriptableObject
