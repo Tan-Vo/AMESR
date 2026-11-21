@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public static class CosmicHorizonProjectBuilder
+public static partial class CosmicHorizonProjectBuilder
 {
     private const string Root = "Assets/ScriptableObjects";
     private static readonly string[] GameEvents = { "OnPlayerDied", "OnPlayerHurt", "OnCreatureCaught", "OnDishServed", "OnCustomerLeft", "OnBossDefeated", "OnGameStateChanged", "OnDayEnded", "OnNightEnded", "OnSaveRequested", "OnNoon", "OnDiveWarning", "OnSunset", "OnMidnight" };
@@ -72,6 +72,7 @@ public static class CosmicHorizonProjectBuilder
         foreach (string name in new[] { "OnOxygenChanged", "OnHPChanged", "OnDepthChanged" }) Ensure<SO_FloatEvent>("Events/" + name);
         foreach (string name in new[] { "OnCreditsChanged", "OnReputationChanged", "OnStateRequested", "OnStateEntered" }) Ensure<SO_IntEvent>("Events/" + name);
         foreach (string name in new[] { "OnSceneRequested", "OnSceneLoaded", "OnSceneFailed" }) Ensure<SO_StringEvent>("Events/" + name);
+        BuildPlayerEvents();
         Ensure<SO_SaveSession>("Data/SO_SaveSession");
         var meat = Ensure<SO_ItemData>("Data/SO_AlienMeat");
         Set(meat, "itemName", "Alien Meat", "icon", SpriteAt("Creatures/alien_creature_001.png"), "category", 0);
@@ -156,6 +157,7 @@ public static class CosmicHorizonProjectBuilder
             imageObject.GetComponent<Image>().color = Color.black;
             Set(transitionManager, "fadeCanvasGroup", group);
             var transitionPrefab = PrefabUtility.SaveAsPrefabAsset(transition, "Assets/Prefabs/Core/PF_SceneTransitionManager.prefab");
+            var playerPrefab = BuildPlayerPrefab();
             string[] names = { "SC_MainMenu", "SC_Tutorial", "SC_Mothership", "SC_DiveZone1_Shallows", "SC_DiveZone2_Twilight", "SC_DiveZone3_Abyssal", "SC_DiveZone4_EventHorizon", "SC_NebulaCantina", "SC_BossArena" };
             var buildScenes = new EditorBuildSettingsScene[names.Length];
             for (int i = 0; i < names.Length; i++)
@@ -178,6 +180,8 @@ public static class CosmicHorizonProjectBuilder
                         camera.GetComponent<Camera>().orthographicSize = 7;
                     }
                 }
+                if (names[i] == "SC_Tutorial" || names[i].StartsWith("SC_DiveZone", StringComparison.Ordinal))
+                    BuildDiveScene(scene, playerPrefab, i >= 3 && i <= 6 ? i - 3 : 0);
                 EditorSceneManager.SaveScene(scene, path);
                 buildScenes[i] = new EditorBuildSettingsScene(path, true);
             }

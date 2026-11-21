@@ -66,6 +66,14 @@ internal static class CoreTests
         Check(!data.IsValid(), "mismatched upgrade lists rejected");
         Set(data, "inventory", null);
         Check(!data.IsValid(), "null collection rejected");
-        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (Timer + SaveData; no Unity runtime).");
+        Check(Math.Abs(OxygenMath.DrainRate(0, false) - 0.45f) < 0.0001f, "surface oxygen rate");
+        Check(Math.Abs(OxygenMath.DrainRate(2500, false) - 1.2f) < 0.0001f, "maximum reference depth rate");
+        Check(Math.Abs(OxygenMath.DrainRate(2500, true) - 3.84f) < 0.0001f, "boost multiplier");
+        Check(OxygenMath.DrainRate(-5, false) == OxygenMath.DrainRate(0, false), "negative depth clamped");
+        Check(OxygenMath.DrainRate(5000, false) > OxygenMath.DrainRate(2500, false), "deep pressure continues scaling");
+        bool rejected = false;
+        try { OxygenMath.DrainRate(float.NaN, false); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "nonfinite depth rejected");
+        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (Timer + SaveData + OxygenMath; no Unity runtime).");
     }
 }

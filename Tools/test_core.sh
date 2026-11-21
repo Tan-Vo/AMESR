@@ -9,7 +9,7 @@ trap 'rm -rf "$OUT"' EXIT
 args=(-nologo -target:exe -langversion:latest -out:"$OUT/CoreTests.dll")
 while IFS= read -r -d '' dll; do args+=("-r:$dll"); done < <(find "$REF" -name '*.dll' -print0)
 CORE="$DATA/Managed/UnityEngine/UnityEngine.CoreModule.dll"
-args+=("-r:$CORE" "$ROOT/Assets/Scripts/Utilities/Timer.cs" "$ROOT/Assets/Scripts/Core/SaveData.cs" "$ROOT/Tools/Tests/CoreTests.cs")
+args+=("-r:$CORE" "$ROOT/Assets/Scripts/Utilities/Timer.cs" "$ROOT/Assets/Scripts/Core/SaveData.cs" "$ROOT/Assets/Scripts/Player/OxygenMath.cs" "$ROOT/Tools/Tests/CoreTests.cs")
 "$DATA/DotNetSdk/dotnet" "$CSC" "${args[@]}"
 cp "$CORE" "$OUT/"
 cp "$ROOT/Tools/Tests/CoreTests.runtimeconfig.json" "$OUT/"
