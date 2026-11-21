@@ -42,21 +42,50 @@ internal static class ReviewRegressionTests
         queue.Enqueue("fish"); queue.Enqueue("fish");
         check(KitchenQueueMath.Cancel(queue, "fish") && queue.Count == 1, "cancel only one customer's duplicate recipe");
 
+        var orders = new Queue<string>(new[] { "rice", "fish", "rice" });
+        var cookingSlots = new[] { "fish", "rice", null }; var timers = new[] { 5f, 7f, 0f };
+        var completed = new Queue<string>(new[] { "fish", "rice" });
+        check(KitchenQueueMath.Cancel(orders, cookingSlots, timers, completed, "fish") && string.Join(",", orders) == "rice,rice" && cookingSlots[0] == "fish" && timers[0] == 5 && completed.Count == 2, "cancel prefers queued serving and preserves other stages");
+        check(KitchenQueueMath.Cancel(orders, cookingSlots, timers, completed, "fish") && cookingSlots[0] == null && timers[0] == 0 && cookingSlots[1] == "rice" && timers[1] == 7 && completed.Count == 2, "cooking cancellation clears only matching slot and timer");
+        check(KitchenQueueMath.Cancel(orders, cookingSlots, timers, completed, "fish") && completed.Count == 1 && completed.Peek() == "rice", "ready cancellation preserves other recipe");
+        check(!KitchenQueueMath.Cancel(orders, cookingSlots, timers, completed, "missing") && orders.Count == 2 && completed.Count == 1, "unknown staged cancellation leaves meals untouched");
+        check(!KitchenQueueMath.Cancel(orders, cookingSlots, timers, completed, null), "null recipe does not cancel empty cooking slot");
+        check(!KitchenQueueMath.Cancel(new Queue<string>(), Array.Empty<string>(), Array.Empty<float>(), new Queue<string>(), "fish"), "empty kitchen cancellation safe");
+
+        Func<IEnumerable<string>, string, int> platesOf = (plates, recipe) => { int total = 0; foreach (var plate in plates) if (plate == recipe) total++; return total; };
         for (int queued = 0; queued <= 2; queued++)
-        for (int cooking = 0; cooking <= 2; cooking++)
+        for (int cooking = 0; cooking <= 3; cooking++)
         for (int ready = 0; ready <= 2; ready++)
         for (int carried = 1; carried <= 3; carried++)
         {
-            var waiting = new Queue<string>(); var cookingPlates = new Queue<string>(); var readyPlates = new Queue<string>();
+            var waiting = new Queue<string>(new[] { "rice" }); var readyPlates = new Queue<string>(new[] { "rice" });
+            var cookingPlates = new string[3]; var cookingTimers = new float[3]; var tray = new string[3];
             for (int i = 0; i < queued; i++) waiting.Enqueue("fish");
-            for (int i = 0; i < cooking; i++) cookingPlates.Enqueue("fish");
+            for (int i = 0; i < cooking; i++) { cookingPlates[i] = "fish"; cookingTimers[i] = 3; }
             for (int i = 0; i < ready; i++) readyPlates.Enqueue("fish");
-            int demand = queued + cooking + ready + carried - 1;
-            if (!KitchenQueueMath.Cancel(waiting, "fish") && !KitchenQueueMath.Cancel(cookingPlates, "fish")) KitchenQueueMath.Cancel(readyPlates, "fish");
-            int retainedTray = Math.Min(carried, demand);
-            check(waiting.Count + cookingPlates.Count + readyPlates.Count + retainedTray == demand,
-                "fungible carried cancellation conserves demand: " + queued + "/" + cooking + "/" + ready + "/" + carried);
+            for (int i = 0; i < carried; i++) tray[i] = "fish";
+            if (carried < 3) tray[carried] = "rice";
+            int fishDemand = queued + cooking + ready + carried - 1, riceDemand = 2 + (carried < 3 ? 1 : 0);
+            KitchenQueueMath.Cancel(waiting, cookingPlates, cookingTimers, readyPlates, "fish");
+            int count = KitchenQueueMath.PruneTray(tray, Math.Min(carried + 1, 3), recipe => recipe == "fish" ? fishDemand : riceDemand, true);
+            check(platesOf(waiting, "fish") + platesOf(cookingPlates, "fish") + platesOf(readyPlates, "fish") + platesOf(tray, "fish") == fishDemand &&
+                platesOf(waiting, "rice") + platesOf(cookingPlates, "rice") + platesOf(readyPlates, "rice") + platesOf(tray, "rice") == riceDemand &&
+                count == platesOf(tray, "fish") + platesOf(tray, "rice"), "production cancellation and tray cleanup conserve mixed demand: " + queued + "/" + cooking + "/" + ready + "/" + carried);
         }
+        var mixedTray = new[] { "rice", "fish", "fish" };
+        check(KitchenQueueMath.PruneTray(mixedTray, 3, recipe => recipe == "fish" ? 1 : 0, true) == 1 && mixedTray[0] == "fish" && mixedTray[1] == null && mixedTray[2] == null, "tray swap removal retains demanded recipe and clears vacated slots");
+        check(KitchenQueueMath.PruneTray(mixedTray, 1, recipe => 1, true) == 1, "tray cleanup idempotent at exact demand");
+        check(KitchenQueueMath.PruneTray(mixedTray, 1, null, false) == 0 && mixedTray[0] == null, "closed service clears tray without consulting demand");
+        check(KitchenQueueMath.PruneTray(Array.Empty<string>(), 0, recipe => 0, true) == 0, "empty tray cleanup safe");
+        rejected = false;
+        try { KitchenQueueMath.PruneTray(mixedTray, -1, recipe => 0, true); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        check(rejected, "invalid tray count rejected");
+        rejected = false;
+        try { KitchenQueueMath.PruneTray(mixedTray, 1, null, true); } catch (ArgumentNullException) { rejected = true; }
+        check(rejected, "running tray cleanup requires demand provider");
+        rejected = false;
+        try { KitchenQueueMath.Cancel(orders, cookingSlots, Array.Empty<float>(), completed, "fish"); } catch (ArgumentException) { rejected = true; }
+        check(rejected, "mismatched cooking timers rejected before mutation");
 
         var data = new SaveData();
         check(RewardLedger.Store(data, "Maw:legendary", "core", 1), "victory reward recorded independently of cargo");

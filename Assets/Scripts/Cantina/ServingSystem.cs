@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 [RequireComponent(typeof(PlayerStateMachine))]
@@ -12,17 +13,13 @@ public sealed class ServingSystem : MonoBehaviour
     private int count;
     private bool interact;
     private PlayerStateMachine states;
-    private void Awake() { states = GetComponent<PlayerStateMachine>(); }
+    private Func<SO_DishRecipe, int> pendingOrders;
+    private void Awake() { states = GetComponent<PlayerStateMachine>(); pendingOrders = cantina.PendingOrders; }
     private void Update() { interact |= Input.GetKeyDown(KeyCode.E); }
     private void FixedUpdate()
     {
         if (states.CurrentState == PlayerState.Dead || states.CurrentState == PlayerState.Hurt) { interact = false; return; }
-        for (int i = count - 1; i >= 0; i--)
-        {
-            int earlier = 0;
-            for (int j = 0; j < i; j++) if (tray[j] == tray[i]) earlier++;
-            if (!cantina.IsRunning || cantina.PendingOrders(tray[i]) <= earlier) { tray[i] = tray[--count]; tray[count] = null; }
-        }
+        count = KitchenQueueMath.PruneTray(tray, count, pendingOrders, cantina.IsRunning);
         states.ChangeState(count > 0 ? PlayerState.Waiter_Carrying : PlayerState.Waiter_Idle);
         if (!interact || !cantina.IsRunning) { interact = false; return; }
         interact = false;
