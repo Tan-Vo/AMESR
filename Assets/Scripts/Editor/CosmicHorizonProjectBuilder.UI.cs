@@ -98,9 +98,25 @@ public static partial class CosmicHorizonProjectBuilder
         Set(settings, "volume", slider, "bgm", music, "sfx", effects, "resolution", dropdown, "fullscreen", toggle);
         UIButton(panel.transform, "Close", new Vector2(0, -220), settings.Close); panel.gameObject.SetActive(false); return panel.gameObject;
     }
+    private static void EnsureBossLootButton(Transform root)
+    {
+        const string label = "Claim boss loot";
+        if (root.Find(label) != null) return;
+
+        var inventory = Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess");
+        var button = UIButton(root, label, new Vector2(-760, -200), inventory.ClaimRewards);
+        // Match the fresh scene's draw order so HUD and modal panels stay above the button.
+        var depthGauge = root.Find("DepthGauge");
+        if (depthGauge != null) button.transform.SetSiblingIndex(depthGauge.GetSiblingIndex());
+    }
     private static void BuildSceneUI(Scene scene)
     {
-        if (scene.GetRootGameObjects().Any(obj => obj.name == "CosmicUI")) return;
+        var existingUI = scene.GetRootGameObjects().FirstOrDefault(obj => obj.name == "CosmicUI");
+        if (existingUI != null)
+        {
+            if (scene.name == "SC_Mothership") EnsureBossLootButton(existingUI.transform);
+            return;
+        }
         var obj = new GameObject("CosmicUI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         obj.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay; obj.GetComponent<Canvas>().sortingOrder = 300;
         obj.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; obj.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
@@ -140,7 +156,7 @@ public static partial class CosmicHorizonProjectBuilder
             var commands = new[] { UICommand.Tutorial, UICommand.Shallows, UICommand.Twilight, UICommand.Abyssal, UICommand.EventHorizon, UICommand.Cantina, UICommand.Sleep };
             for (int i = 0; i < commands.Length; i++) Navigation(root, commands[i].ToString(), new Vector2(-760, 300 - i * 75), commands[i]);
             BuildShop(root); BuildDialogue(root);
-            UIButton(root, "Claim boss loot", new Vector2(-760, -200), Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess").ClaimRewards);
+            EnsureBossLootButton(root);
         }
         else if (scene.name == "SC_NebulaCantina") BuildCantinaUI(scene, root);
         else Navigation(root, "Return to hub", new Vector2(760, -450), UICommand.Hub);
