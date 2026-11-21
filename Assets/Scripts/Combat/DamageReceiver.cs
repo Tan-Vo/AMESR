@@ -25,7 +25,7 @@ public sealed class DamageReceiver : MonoBehaviour
         int bonus = effect == HarpoonEffect.BlazingPlasma ? 5 :
             effect == HarpoonEffect.DarkMatter && (CompareTag("Boss") || creature != null && creature.Data.BehaviorType == CreatureBehavior.Boss) ? 10 : 0;
         int resolved = DamageSystem.CalculateDamage((int)System.Math.Min(int.MaxValue, (long)damage + bonus), multiplier, effect == HarpoonEffect.DarkMatter ? 0 : armor + (IsPlayer && gear != null ? gear.Armor : 0));
-        target.TakeDamage(resolved);
+        if (target is PlayerStats player) player.TakeResolvedDamage(resolved); else target.TakeDamage(resolved);
         onFloatingTextRequested?.Raise(transform.position + Vector3.up * 0.6f, resolved.ToString(), Color.yellow);
         if (creature == null || !creature.IsAlive) return;
         if (effect == HarpoonEffect.CryoFreeze) creature.ApplySlow(2f);

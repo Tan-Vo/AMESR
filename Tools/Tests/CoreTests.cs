@@ -168,6 +168,7 @@ internal static class CoreTests
         Check(questSave.IsValid(), "quest and tutorial save valid");
         questSave.TutorialStep = 11;
         Check(!questSave.IsValid(), "invalid tutorial step rejected");
-        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (core + diving + combat + service/reputation/upgrade + boss + inventory + trauma + quest math; no Unity runtime).");
+        ReviewRegressionTests.Run(Check);
+        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (core + diving + combat + service/reputation/upgrade + boss + inventory + trauma + quest math + review regressions; no Unity runtime).");
     }
 }

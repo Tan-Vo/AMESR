@@ -17,16 +17,17 @@ public sealed class ServingSystem : MonoBehaviour
     private void FixedUpdate()
     {
         if (states.CurrentState == PlayerState.Dead || states.CurrentState == PlayerState.Hurt) { interact = false; return; }
+        for (int i = count - 1; i >= 0; i--)
+        {
+            int earlier = 0;
+            for (int j = 0; j < i; j++) if (tray[j] == tray[i]) earlier++;
+            if (!cantina.IsRunning || cantina.PendingOrders(tray[i]) <= earlier) { tray[i] = tray[--count]; tray[count] = null; }
+        }
         states.ChangeState(count > 0 ? PlayerState.Waiter_Carrying : PlayerState.Waiter_Idle);
         if (!interact || !cantina.IsRunning) { interact = false; return; }
         interact = false;
         session.Data.UpgradeLevels.TryGetValue("SO_WaiterTray", out int level);
         int capacity = Mathf.Clamp(1 + level, 1, 3);
-        if (((Vector2)transform.position - (Vector2)counter.position).sqrMagnitude < 2.25f)
-        {
-            while (count < capacity) { var dish = kitchen.PickUp(); if (dish == null) break; tray[count++] = dish; }
-            return;
-        }
         var customer = cantina.Nearby(transform.position);
         if (customer != null && count > 0)
         {
@@ -35,6 +36,10 @@ public sealed class ServingSystem : MonoBehaviour
             var dish = tray[slot]; tray[slot] = tray[--count]; tray[count] = null;
             cantina.Serve(customer, dish);
             states.ChangeState(PlayerState.Waiter_Serving);
+        }
+        else if (((Vector2)transform.position - (Vector2)counter.position).sqrMagnitude < 2.25f)
+        {
+            while (count < capacity) { var dish = kitchen.PickUp(); if (dish == null) break; tray[count++] = dish; }
         }
         else cantina.ClearPlate(transform.position);
     }

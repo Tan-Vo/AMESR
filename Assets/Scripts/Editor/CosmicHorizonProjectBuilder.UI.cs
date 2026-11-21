@@ -17,6 +17,7 @@ public static partial class CosmicHorizonProjectBuilder
         Ensure<SO_WeaponHUDEvent>("Events/OnWeaponHUDChanged");
         Ensure<SO_GameEvent>("Events/OnLoadRequested");
         Ensure<SO_IntEvent>("Events/OnHealRequested");
+        Ensure<SO_HealingRequestEvent>("Events/OnHealingRequested");
         Ensure<SO_IntEvent>("Events/OnDialogueCompleted");
         Ensure<SO_FloatEvent>("Events/OnPhaseTimeChanged");
         var inventory = Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess"); WireChannels(inventory);
@@ -139,6 +140,7 @@ public static partial class CosmicHorizonProjectBuilder
             var commands = new[] { UICommand.Tutorial, UICommand.Shallows, UICommand.Twilight, UICommand.Abyssal, UICommand.EventHorizon, UICommand.Cantina, UICommand.Sleep };
             for (int i = 0; i < commands.Length; i++) Navigation(root, commands[i].ToString(), new Vector2(-760, 300 - i * 75), commands[i]);
             BuildShop(root); BuildDialogue(root);
+            UIButton(root, "Claim boss loot", new Vector2(-760, -200), Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess").ClaimRewards);
         }
         else if (scene.name == "SC_NebulaCantina") BuildCantinaUI(scene, root);
         else Navigation(root, "Return to hub", new Vector2(760, -450), UICommand.Hub);
@@ -149,7 +151,11 @@ public static partial class CosmicHorizonProjectBuilder
         Set(pause, "panel", pausePanel.gameObject, "settings", settings);
         UnityAction[] actions = { pause.Resume, pause.Settings, pause.Save, pause.Load, pause.Quit };
         string[] labels = { "Resume", "Settings", "Save", "Load", "Quit to menu" };
-        for (int i = 0; i < labels.Length; i++) UIButton(pausePanel.transform, labels[i], new Vector2(0, 200 - i * 85), actions[i]);
+        for (int i = 0; i < labels.Length; i++)
+        {
+            var button = UIButton(pausePanel.transform, labels[i], new Vector2(0, 200 - i * 85), actions[i]);
+            if (i == 2) Set(pause, "saveButton", button);
+        }
         pausePanel.gameObject.SetActive(false); settings.transform.SetAsLastSibling();
     }
     private static void BuildHUD(Transform root)

@@ -87,6 +87,7 @@ public sealed class CustomerAI : MonoBehaviour
     private void LeaveAngry()
     {
         if (State == CustomerState.AngryLeaving || paid) return;
+        if (State == CustomerState.WaitingForOrder) cantina.CancelOrder(Order);
         State = CustomerState.AngryLeaving;
         cantina.Angry(this);
         ReleaseSeat();

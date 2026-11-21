@@ -21,6 +21,16 @@ public sealed class QuestProgressData
 }
 
 [Serializable]
+public sealed class PendingRewardData
+{
+    [SerializeField] private string rewardId, itemId;
+    [SerializeField] private int quantity;
+    public string RewardId { get => rewardId; set => rewardId = value; }
+    public string ItemId { get => itemId; set => itemId = value; }
+    public int Quantity { get => quantity; set => quantity = value; }
+}
+
+[Serializable]
 public sealed class SaveData : ISerializationCallbackReceiver
 {
     [SerializeField] private int version = 1;
@@ -32,6 +42,7 @@ public sealed class SaveData : ISerializationCallbackReceiver
     [SerializeField] private List<string> unlockedRecipeIds = new();
     [SerializeField] private List<string> completedQuestIds = new();
     [SerializeField] private List<string> defeatedBossIds = new();
+    [SerializeField] private List<PendingRewardData> pendingRewards = new();
     [SerializeField] private List<QuestProgressData> questProgress = new();
     [SerializeField] private int tutorialStep;
     [SerializeField] private float totalPlayTime;
@@ -47,6 +58,7 @@ public sealed class SaveData : ISerializationCallbackReceiver
     public List<string> UnlockedRecipeIds => unlockedRecipeIds;
     public List<string> CompletedQuestIds => completedQuestIds;
     public List<string> DefeatedBossIds => defeatedBossIds;
+    public List<PendingRewardData> PendingRewards => pendingRewards ??= new();
     public List<QuestProgressData> QuestProgress => questProgress ??= new();
     public int TutorialStep { get => tutorialStep; set => tutorialStep = value; }
     public Dictionary<string, int> UpgradeLevels => upgradeLevels;
@@ -75,6 +87,12 @@ public sealed class SaveData : ISerializationCallbackReceiver
             inventory == null || unlockedRecipeIds == null || completedQuestIds == null || defeatedBossIds == null ||
             upgradeKeys == null || upgradeValues == null || upgradeKeys.Count != upgradeValues.Count) return false;
         if (tutorialStep < 0 || tutorialStep > 10) return false;
+        if (pendingRewards != null)
+        {
+            var ids = new HashSet<string>();
+            foreach (var reward in pendingRewards)
+                if (reward == null || string.IsNullOrEmpty(reward.RewardId) || string.IsNullOrEmpty(reward.ItemId) || reward.Quantity <= 0 || !ids.Add(reward.RewardId)) return false;
+        }
         if (questProgress != null) foreach (var entry in questProgress)
             if (entry == null || string.IsNullOrEmpty(entry.Key) || entry.Amount < 0) return false;
         foreach (var slot in inventory)

@@ -15,6 +15,13 @@ public sealed class KitchenQueue : MonoBehaviour
     public void Enqueue(SO_DishRecipe recipe) { if (recipe != null) orders.Enqueue(recipe); }
     /// <summary>Removes one completed dish for the waiter's tray.</summary>
     public SO_DishRecipe PickUp() => ready.Count > 0 ? ready.Dequeue() : null;
+    /// <summary>Discards one abandoned order at whichever kitchen stage still owns a matching plate.</summary>
+    public void Cancel(SO_DishRecipe recipe)
+    {
+        if (KitchenQueueMath.Cancel(orders, recipe)) return;
+        for (int i = 0; i < cooking.Length; i++) if (cooking[i] == recipe) { cooking[i] = null; remaining[i] = 0f; return; }
+        KitchenQueueMath.Cancel(ready, recipe);
+    }
     /// <summary>Clears unfinished and ready orders between nights.</summary>
     public void ResetQueue() { orders.Clear(); ready.Clear(); System.Array.Clear(cooking, 0, cooking.Length); }
     private void Update()

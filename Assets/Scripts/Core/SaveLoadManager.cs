@@ -10,10 +10,13 @@ public sealed class SaveLoadManager : Singleton<SaveLoadManager>
     [SerializeField] private SO_GameEvent onSaveRequested;
     [SerializeField] private SO_GameEvent onLoadRequested;
     [SerializeField] private SO_GameEvent onSaveFailed;
+    [SerializeField] private SO_IntEvent onStateEntered;
+    private GameState saveState = GameState.MainMenu;
     [SerializeField] private int activeSlot;
     public string LastError { get; private set; }
-    private void OnEnable() { onSaveRequested?.RegisterListener(SaveActiveSlot); onLoadRequested?.RegisterListener(LoadActiveSlot); }
-    private void OnDisable() { onSaveRequested?.UnregisterListener(SaveActiveSlot); onLoadRequested?.UnregisterListener(LoadActiveSlot); }
+    private void OnEnable() { onSaveRequested?.RegisterListener(SaveActiveSlot); onLoadRequested?.RegisterListener(LoadActiveSlot); onStateEntered?.RegisterListener(State); }
+    private void OnDisable() { onSaveRequested?.UnregisterListener(SaveActiveSlot); onLoadRequested?.UnregisterListener(LoadActiveSlot); onStateEntered?.UnregisterListener(State); }
+    private void State(int state) { if ((GameState)state != GameState.Paused) saveState = (GameState)state; }
     private void LoadActiveSlot() { Load(activeSlot); }
     private void SaveActiveSlot() { Save(activeSlot); }
     private static string PathFor(int slot)
@@ -26,6 +29,7 @@ public sealed class SaveLoadManager : Singleton<SaveLoadManager>
     {
         try
         {
+            if (!CheckpointPolicy.CanSave(saveState)) throw new InvalidOperationException("Save at a hub checkpoint, not during an active dive or service.");
             string path = PathFor(slot);
             if (session == null) throw new InvalidOperationException("Save session is not configured.");
             onCaptureSave?.Raise();
