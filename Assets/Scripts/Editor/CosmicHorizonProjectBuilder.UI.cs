@@ -115,6 +115,9 @@ public static partial class CosmicHorizonProjectBuilder
         if (existingUI != null)
         {
             if (scene.name == "SC_Mothership") EnsureBossLootButton(existingUI.transform);
+            var existingPause = existingUI.GetComponent<PauseMenuUI>();
+            var save = existingUI.transform.Find("Pause/Save");
+            if (existingPause != null && save != null) Set(existingPause, "saveButton", save.GetComponent<Button>());
             return;
         }
         var obj = new GameObject("CosmicUI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
