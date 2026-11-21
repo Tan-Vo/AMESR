@@ -119,6 +119,7 @@ public static partial class CosmicHorizonProjectBuilder
         Set(quest, "questName", "First Catch", "description", "Catch three creatures.", "creditReward", 100, "icon", creatures[0].Icon);
         SetArray(quest, "objectives", 1, (p, i) => { p.FindPropertyRelative("requiredAmount").intValue = 3; p.FindPropertyRelative("description").stringValue = "Catch any three creatures."; });
         BuildEcosystemData();
+        BuildCantinaData();
     }
 
     private static void BuildScenes()
@@ -160,6 +161,7 @@ public static partial class CosmicHorizonProjectBuilder
             var transitionPrefab = PrefabUtility.SaveAsPrefabAsset(transition, "Assets/Prefabs/Core/PF_SceneTransitionManager.prefab");
             var playerPrefab = BuildPlayerPrefab();
             var ecosystemPrefab = BuildEcosystemPrefab();
+            var customerPrefab = BuildCustomerPrefab();
             string[] names = { "SC_MainMenu", "SC_Tutorial", "SC_Mothership", "SC_DiveZone1_Shallows", "SC_DiveZone2_Twilight", "SC_DiveZone3_Abyssal", "SC_DiveZone4_EventHorizon", "SC_NebulaCantina", "SC_BossArena" };
             var buildScenes = new EditorBuildSettingsScene[names.Length];
             for (int i = 0; i < names.Length; i++)
@@ -187,6 +189,7 @@ public static partial class CosmicHorizonProjectBuilder
                     BuildDiveScene(scene, playerPrefab, i >= 3 && i <= 6 ? i - 3 : 0);
                     BuildEcosystemScene(scene, ecosystemPrefab);
                 }
+                if (names[i] == "SC_NebulaCantina") BuildCantinaScene(scene, playerPrefab, customerPrefab);
                 EditorSceneManager.SaveScene(scene, path);
                 buildScenes[i] = new EditorBuildSettingsScene(path, true);
             }

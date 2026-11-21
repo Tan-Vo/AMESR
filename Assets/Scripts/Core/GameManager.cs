@@ -75,6 +75,7 @@ public sealed class GameManager : Singleton<GameManager>
             currentState = newState;
         }
         onGameStateChanged?.Raise();
+        if (newState == GameState.CantinaOpen && dayTimer <= 0f) dayTimer = cantinaTimeLimitSeconds;
         onStateEntered?.Raise((int)currentState);
     }
     /// <summary>Resets the session and enters the first morning.</summary>

@@ -18,6 +18,7 @@ public sealed class SaveData : ISerializationCallbackReceiver
     [SerializeField] private int currentDay = 1;
     [SerializeField] private int credits = 500;
     [SerializeField] private int reputationStars = 1;
+    [SerializeField] private int reputationPoints;
     [SerializeField] private List<InventorySlotData> inventory = new();
     [SerializeField] private List<string> unlockedRecipeIds = new();
     [SerializeField] private List<string> completedQuestIds = new();
@@ -30,6 +31,7 @@ public sealed class SaveData : ISerializationCallbackReceiver
     public int CurrentDay { get => currentDay; set => currentDay = value; }
     public int Credits { get => credits; set => credits = value; }
     public int ReputationStars { get => reputationStars; set => reputationStars = value; }
+    public int ReputationPoints { get => reputationPoints; set => reputationPoints = value; }
     public List<InventorySlotData> Inventory => inventory;
     public List<string> UnlockedRecipeIds => unlockedRecipeIds;
     public List<string> CompletedQuestIds => completedQuestIds;
@@ -55,7 +57,7 @@ public sealed class SaveData : ISerializationCallbackReceiver
     /// <summary>Checks save integrity before allowing it to replace the active session.</summary>
     public bool IsValid()
     {
-        if (version != 1 || currentDay < 1 || credits < 0 || reputationStars < 1 || reputationStars > 4 ||
+        if (version != 1 || currentDay < 1 || credits < 0 || reputationPoints < 0 || reputationStars < 1 || reputationStars > 4 ||
             float.IsNaN(totalPlayTime) || float.IsInfinity(totalPlayTime) || totalPlayTime < 0 ||
             inventory == null || unlockedRecipeIds == null || completedQuestIds == null || defeatedBossIds == null ||
             upgradeKeys == null || upgradeValues == null || upgradeKeys.Count != upgradeValues.Count) return false;

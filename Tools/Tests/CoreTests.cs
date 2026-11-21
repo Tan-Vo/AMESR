@@ -116,6 +116,26 @@ internal static class CoreTests
         rejected = false;
         try { DamageSystem.CalculateDamage(10, -1f, 0); } catch (ArgumentOutOfRangeException) { rejected = true; }
         Check(rejected, "negative multiplier rejected");
-        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (Timer + SaveData + OxygenMath + WeightedSelection + TensionMath + DamageSystem; no Unity runtime).");
+        Check(ServiceMath.Patience(20, CustomerType.Normal, 20) == 0, "normal patience lasts twenty seconds");
+        Check(ServiceMath.Patience(20, CustomerType.VIP, 12) == 0, "VIP patience drains faster");
+        Check(Math.Abs(ServiceMath.Patience(20, CustomerType.Critic, 10) - 5) < 0.0001f, "critic patience rate");
+        Check(ServiceMath.Patience(0, CustomerType.Normal, 0) == 0, "empty patience remains zero");
+        Check(ServiceMath.Tip(100, 0.81f) == 30 && ServiceMath.Tip(100, 0.8f) == 15, "top tip strict threshold");
+        Check(ServiceMath.Tip(100, 0.5f) == 5 && ServiceMath.Tip(100, 0.2f) == 0, "lower tip strict thresholds");
+        Check(ServiceMath.Tip(0, 1) == 0 && ServiceMath.Tip(100, 1, 200) == 60, "zero price and recipe tip multiplier");
+        Check(ServiceMath.Rank(29) == ReputationRank.Bronze && ServiceMath.Rank(30) == ReputationRank.Silver, "silver threshold");
+        Check(ServiceMath.Rank(99) == ReputationRank.Silver && ServiceMath.Rank(100) == ReputationRank.Gold, "gold threshold");
+        Check(ServiceMath.Rank(299) == ReputationRank.Gold && ServiceMath.Rank(300) == ReputationRank.CosmicDiamond, "diamond threshold");
+        Check(ServiceMath.Reputation(CustomerType.Critic) == 5 && ServiceMath.Seats(30) == 6, "critic award and unlocked seats");
+        Check(UpgradeCostCurve.Calculate(100, 1.618, 0) == 100 && UpgradeCostCurve.Calculate(100, 1.618, 2) == 262, "golden ratio level indexing");
+        Check(UpgradeCostCurve.Calculate(100, 2.15, 1) == 215, "core upgrade multiplier");
+        Check(UpgradeCostCurve.Calculate(0, 2.15, 100) == 0 && UpgradeCostCurve.Calculate(100, 2.15, 100) == int.MaxValue, "free and overflowing upgrades");
+        rejected = false;
+        try { ServiceMath.Patience(20, CustomerType.Normal, float.NaN); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "nonfinite patience time rejected");
+        rejected = false;
+        try { UpgradeCostCurve.Calculate(100, 0.5, -1); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "invalid upgrade curve rejected");
+        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (core + diving + combat + service/reputation/upgrade math; no Unity runtime).");
     }
 }

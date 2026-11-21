@@ -101,7 +101,7 @@ public static partial class CosmicHorizonProjectBuilder
         foreach (string parameter in bools) controller.AddParameter(parameter, AnimatorControllerParameterType.Bool);
         foreach (string parameter in new[] { "Speed", "VelocityY" }) controller.AddParameter(parameter, AnimatorControllerParameterType.Float);
         foreach (string parameter in new[] { "Attack", "Hurt", "Die" }) controller.AddParameter(parameter, AnimatorControllerParameterType.Trigger);
-        string[] names = { "Idle", "Walk", "Run", "Jump", "Swim", "Hurt", "Dead", "HarpoonAim", "Mining", "Shoot", "Slash" };
+        string[] names = { "Idle", "Walk", "Run", "Jump", "Swim", "Hurt", "Dead", "HarpoonAim", "Mining", "Shoot", "Slash", "Waiter" };
         string[][] paths = {
             Frames("Characters/Player/Idle/player_idle_", 10),
             Frames("Characters/Player/Walk/player_walk_", 8),
@@ -113,7 +113,8 @@ public static partial class CosmicHorizonProjectBuilder
             Frames("Characters/player_anim_harpoon_aim_", 6),
             new[] { "Characters/Player/Actions/player_action_mine_drill_active.png" },
             new[] { "Characters/Player/Actions/player_action_shoot_01_aim.png", "Characters/Player/Actions/player_action_shoot_02_fire.png", "Characters/Player/Actions/player_action_shoot_03_recoil.png" },
-            new[] { "Characters/Player/Actions/player_action_slash_01_windup.png", "Characters/Player/Actions/player_action_slash_02_strike.png", "Characters/Player/Actions/player_action_slash_03_recover.png" }
+            new[] { "Characters/Player/Actions/player_action_slash_01_windup.png", "Characters/Player/Actions/player_action_slash_02_strike.png", "Characters/Player/Actions/player_action_slash_03_recover.png" },
+            Frames("Characters/player_anim_waiter_mode_", 7)
         };
         for (int i = 0; i < names.Length; i++)
         {
@@ -125,7 +126,7 @@ public static partial class CosmicHorizonProjectBuilder
             for (int frame = 0; frame < keys.Length; frame++) keys[frame] = new ObjectReferenceKeyframe { time = frame / 12f, value = SpriteAt(paths[i][Mathf.Min(frame, paths[i].Length - 1)]) };
             AnimationUtility.SetObjectReferenceCurve(clip, EditorCurveBinding.PPtrCurve("", typeof(SpriteRenderer), "m_Sprite"), keys);
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = i < 3 || i == 4 || i == 7 || i == 8;
+            settings.loopTime = i < 3 || i == 4 || i == 7 || i == 8 || i == 11;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
             var state = machine.AddState(names[i]);
             state.motion = clip;
@@ -138,6 +139,8 @@ public static partial class CosmicHorizonProjectBuilder
             if (i == 6) continue;
             transition.AddCondition(i == 5 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isHurt");
             if (i == 5) continue;
+            transition.AddCondition(i == 11 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isWaitering");
+            if (i == 11) continue;
             transition.AddCondition(i == 7 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isHarpooning");
             if (i == 7) continue;
             transition.AddCondition(i == 8 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isMining");
