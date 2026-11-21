@@ -20,6 +20,8 @@ public class ObjectPool<T> : MonoBehaviour where T : MonoBehaviour
     {
         if (sealedPool) throw new InvalidOperationException("Pool capacity is fixed after initialization.");
         if (prefab == null) throw new InvalidOperationException("Pool requires a prefab.");
+        owned.EnsureCapacity(Math.Max(0, count));
+        leased.EnsureCapacity(Math.Max(0, count));
         while (owned.Count < Math.Max(0, count))
         {
             var obj = Instantiate(prefab, poolParent != null ? poolParent : transform);

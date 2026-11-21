@@ -6,6 +6,7 @@ public sealed class DiveCargo : MonoBehaviour
 {
     [SerializeField] private SO_SaveSession session;
     [SerializeField] private SO_FloatEvent onLootPenalty;
+    [SerializeField] private SO_ItemCollectionEvent onItemCollectionRequested;
     private readonly Dictionary<string, int> startingAmounts = new();
     private readonly Dictionary<string, int> currentAmounts = new();
     private readonly Dictionary<string, int> losses = new();
@@ -20,8 +21,8 @@ public sealed class DiveCargo : MonoBehaviour
             startingAmounts[slot.ItemId] = amount + slot.Quantity;
         }
     }
-    private void OnEnable() { onLootPenalty?.RegisterListener(ApplyPenalty); }
-    private void OnDisable() { onLootPenalty?.UnregisterListener(ApplyPenalty); }
+    private void OnEnable() { onLootPenalty?.RegisterListener(ApplyPenalty); onItemCollectionRequested?.RegisterListener(TryAdd); }
+    private void OnDisable() { onLootPenalty?.UnregisterListener(ApplyPenalty); onItemCollectionRequested?.UnregisterListener(TryAdd); }
     /// <summary>Stacks a pickup atomically, returning false when the cargo cannot hold the full amount.</summary>
     public bool TryAdd(SO_ItemData item, int quantity)
     {

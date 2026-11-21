@@ -74,6 +74,24 @@ internal static class CoreTests
         bool rejected = false;
         try { OxygenMath.DrainRate(float.NaN, false); } catch (ArgumentOutOfRangeException) { rejected = true; }
         Check(rejected, "nonfinite depth rejected");
-        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (Timer + SaveData + OxygenMath; no Unity runtime).");
+        Check(WeightedSelection.SelectIndex(new int[] { 70, 25, 5 }, 0) == 0, "first weighted interval");
+        Check(WeightedSelection.SelectIndex(new int[] { 70, 25, 5 }, 0.7) == 1, "weighted boundary is half-open");
+        Check(WeightedSelection.SelectIndex(new int[] { 70, 25, 5 }, 0.999999) == 2, "last weighted interval");
+        Check(WeightedSelection.SelectIndex(Array.Empty<int>(), 0.5) == -1, "empty weights");
+        Check(WeightedSelection.SelectIndex(new int[] { 0, -10 }, 0.5) == -1, "zero and negative weights");
+        Check(WeightedSelection.SelectIndex(new int[] { 0, -10, 2 }, 0) == 2, "invalid weights skipped");
+        Check(WeightedSelection.SelectIndex(new int[] { int.MaxValue, int.MaxValue }, 0.75) == 1, "weight sum does not overflow");
+        Check(WeightedSelection.SelectIndex(new float[] { float.NaN, float.PositiveInfinity, 0, 4 }, 0.5) == 3, "nonfinite float weights skipped");
+        Check(WeightedSelection.SelectIndex(new float[] { 0.25f, 0.75f }, 0.25) == 1, "fractional weight boundary");
+        rejected = false;
+        try { WeightedSelection.SelectIndex(new int[] { 1 }, 1); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "invalid unit sample rejected");
+        rejected = false;
+        try { WeightedSelection.SelectIndex(new int[] { 1 }, double.NaN); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "NaN unit sample rejected");
+        int[] frequencies = new int[3];
+        for (int i = 0; i < 1000; i++) frequencies[WeightedSelection.SelectIndex(new int[] { 70, 25, 5 }, (i + 0.5) / 1000)]++;
+        Check(frequencies[0] == 700 && frequencies[1] == 250 && frequencies[2] == 50, "70/25/5 distribution");
+        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (Timer + SaveData + OxygenMath + WeightedSelection; no Unity runtime).");
     }
 }

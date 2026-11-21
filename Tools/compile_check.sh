@@ -10,6 +10,10 @@ args=(-nologo -target:library -langversion:latest -define:UNITY_EDITOR -out:"$OU
 while IFS= read -r -d '' dll; do args+=("-r:$dll"); done < <(find "$REF" "$DATA/Managed/UnityEngine" -maxdepth 1 -name '*.dll' -print0)
 UGUI="$(find "$ROOT/Library" "$DATA/Resources/PackageManager" -name UnityEngine.UI.dll -print -quit 2>/dev/null || true)"
 if [[ -n "$UGUI" ]]; then args+=("-r:$UGUI"); fi
+for package in Unity.RenderPipelines.Core.Runtime Unity.RenderPipelines.Universal.Runtime Unity.RenderPipelines.Universal.2D.Runtime; do
+    DLL="$(find "$ROOT/Library" "$DATA/Resources/PackageManager" -name "$package.dll" -print -quit 2>/dev/null || true)"
+    if [[ -n "$DLL" ]]; then args+=("-r:$DLL"); fi
+done
 while IFS= read -r -d '' source; do args+=("$source"); done < <(find "$ROOT/Assets/Scripts" -name '*.cs' -print0 | sort -z)
 "$DATA/DotNetSdk/dotnet" "$CSC" "${args[@]}"
 echo "Compile check: 0 errors (all Assets/Scripts runtime + editor C#)."

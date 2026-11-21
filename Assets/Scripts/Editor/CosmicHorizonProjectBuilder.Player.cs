@@ -28,6 +28,7 @@ public static partial class CosmicHorizonProjectBuilder
         var sprite = player.AddComponent<SpriteRenderer>();
         sprite.sprite = SpriteAt("Characters/Player/Idle/player_idle_01.png");
         sprite.sortingLayerName = "Player";
+        sprite.sharedMaterial = SpriteLitMaterial();
         var animator = player.AddComponent<Animator>();
         animator.runtimeAnimatorController = BuildPlayerAnimator();
         player.AddComponent<PlayerStateMachine>();
@@ -166,6 +167,7 @@ public static partial class CosmicHorizonProjectBuilder
             dock.transform.localScale = new Vector3(6, 1, 1);
             dock.GetComponent<BoxCollider2D>().size = Vector2.one;
             dock.GetComponent<SpriteRenderer>().sprite = SpriteAt("Tilesets/tile_008.png");
+            dock.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
         }
         var camera = scene.GetRootGameObjects().First(root => root.GetComponent<Camera>() != null);
         var view = camera.GetComponent<DiveSceneView>();
