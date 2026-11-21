@@ -17,6 +17,9 @@ public class CreatureBase : MonoBehaviour
     public CreatureState State { get; protected set; }
     public int CurrentHP { get; private set; }
     public bool IsAlive => State != CreatureState.Dead && State != CreatureState.Caught;
+    public bool IsHooked { get; private set; }
+    /// <summary>Allows a capture cable to temporarily own movement.</summary>
+    public void SetHooked(bool value) { IsHooked = value; }
     private SpriteRenderer sprite;
     private Collider2D hitbox;
     private float flash;
@@ -43,6 +46,7 @@ public class CreatureBase : MonoBehaviour
         State = CreatureState.Wandering;
         StateTimer = flash = age = 0f;
         initialized = true;
+        IsHooked = false;
         stopPending = false;
         sprite.color = Color.white;
         sprite.sprite = data.Icon;
@@ -69,6 +73,7 @@ public class CreatureBase : MonoBehaviour
             if (StateTimer <= 0f) State = CreatureState.Wandering;
             return;
         }
+        if (IsHooked) return;
         UpdateBehavior();
         if (Body.position.y > -0.5f)
         {

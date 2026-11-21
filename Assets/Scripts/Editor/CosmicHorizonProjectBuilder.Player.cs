@@ -70,6 +70,7 @@ public static partial class CosmicHorizonProjectBuilder
         canvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
         canvasObject.GetComponent<Canvas>().sortingOrder = 100;
         Set(feedback, "waterOverlay", Overlay(canvasObject.transform, "WaterTint"), "oxygenOverlay", Overlay(canvasObject.transform, "OxygenWarning"));
+        BuildDivingPlayer(player, canvasObject.transform);
         return PrefabUtility.SaveAsPrefabAsset(player, "Assets/Prefabs/Player/PF_Player.prefab");
     }
     private static Image Overlay(Transform parent, string name)
@@ -99,7 +100,7 @@ public static partial class CosmicHorizonProjectBuilder
         foreach (string parameter in bools) controller.AddParameter(parameter, AnimatorControllerParameterType.Bool);
         foreach (string parameter in new[] { "Speed", "VelocityY" }) controller.AddParameter(parameter, AnimatorControllerParameterType.Float);
         foreach (string parameter in new[] { "Attack", "Hurt", "Die" }) controller.AddParameter(parameter, AnimatorControllerParameterType.Trigger);
-        string[] names = { "Idle", "Walk", "Run", "Jump", "Swim", "Hurt", "Dead" };
+        string[] names = { "Idle", "Walk", "Run", "Jump", "Swim", "Hurt", "Dead", "HarpoonAim", "Mining" };
         string[][] paths = {
             Frames("Characters/Player/Idle/player_idle_", 10),
             Frames("Characters/Player/Walk/player_walk_", 8),
@@ -107,7 +108,9 @@ public static partial class CosmicHorizonProjectBuilder
             Frames("Characters/Player/Jump/player_jump_", 12),
             Frames("Characters/player_anim_swim_thrust_", 6),
             new[] { "Characters/Player/Actions/player_action_hurt_01_impact.png", "Characters/Player/Actions/player_action_hurt_02_recover.png" },
-            new[] { "Characters/Player/Actions/player_action_hurt_01_impact.png" }
+            new[] { "Characters/Player/Actions/player_action_hurt_01_impact.png" },
+            Frames("Characters/player_anim_harpoon_aim_", 6),
+            new[] { "Characters/Player/Actions/player_action_mine_drill_active.png" }
         };
         for (int i = 0; i < names.Length; i++)
         {
@@ -119,7 +122,7 @@ public static partial class CosmicHorizonProjectBuilder
             for (int frame = 0; frame < keys.Length; frame++) keys[frame] = new ObjectReferenceKeyframe { time = frame / 12f, value = SpriteAt(paths[i][Mathf.Min(frame, paths[i].Length - 1)]) };
             AnimationUtility.SetObjectReferenceCurve(clip, EditorCurveBinding.PPtrCurve("", typeof(SpriteRenderer), "m_Sprite"), keys);
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = i < 3 || i == 4;
+            settings.loopTime = i < 3 || i == 4 || i >= 7;
             AnimationUtility.SetAnimationClipSettings(clip, settings);
             var state = machine.AddState(names[i]);
             state.motion = clip;
@@ -132,6 +135,10 @@ public static partial class CosmicHorizonProjectBuilder
             if (i == 6) continue;
             transition.AddCondition(i == 5 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isHurt");
             if (i == 5) continue;
+            transition.AddCondition(i == 7 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isHarpooning");
+            if (i == 7) continue;
+            transition.AddCondition(i == 8 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isMining");
+            if (i == 8) continue;
             transition.AddCondition(i == 4 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isSwimming");
             if (i == 4) continue;
             transition.AddCondition(i == 3 ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, "isJumping");

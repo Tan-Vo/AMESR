@@ -58,10 +58,12 @@ public static partial class CosmicHorizonProjectBuilder
             SetArray(biome, "spawnableCreatures", eligible.Length, (p, j) => p.objectReferenceValue = eligible[j]);
             SetArray(biome, "spawnWeights", eligible.Length, (p, j) => p.floatValue = eligible[j].BehaviorType == CreatureBehavior.Aggressive ? 1f + i : 3f);
         }
+        BuildDivingData();
     }
     private static GameObject BuildEcosystemPrefab()
     {
         Folder("Assets/Prefabs/Creatures");
+        BuildDivingPrefabs();
         BuildCreaturePrefab<CreatureBase>("PF_Creature");
         var passive = BuildCreaturePrefab<CreatureAI_Passive>("PF_Creature_Passive");
         var aggressive = BuildCreaturePrefab<CreatureAI_Aggressive>("PF_Creature_Aggressive");
@@ -112,6 +114,9 @@ public static partial class CosmicHorizonProjectBuilder
         var component = creature.AddComponent<T>();
         WireChannels(component);
         Set(component, "data", Ensure<SO_CreatureData>("Data/SO_biolum_jellyfish_comb"));
+        var capture = creature.AddComponent<CaptureTarget>();
+        WireChannels(capture);
+        Set(capture, "catalog", Ensure<SO_CatchCatalog>("Data/SO_CatchCatalog"));
         return PrefabUtility.SaveAsPrefabAsset(creature, "Assets/Prefabs/Creatures/" + name + ".prefab");
     }
     private static void BuildEcosystemScene(Scene scene, GameObject prefab)
@@ -123,6 +128,7 @@ public static partial class CosmicHorizonProjectBuilder
         var camera = roots.First(root => root.GetComponent<Camera>() != null).GetComponent<Camera>();
         Set(ecosystem.GetComponent<CreatureSpawner>(), "player", player.transform, "worldCamera", camera);
         Set(ecosystem.GetComponent<FlockManager>(), "player", player.transform);
+        BuildDivingScene(scene, player.transform);
         var lighting = roots.FirstOrDefault(root => root.name == "GlobalLight2D");
         if (lighting == null) lighting = new GameObject("GlobalLight2D", typeof(Light2D));
         var light = lighting.GetComponent<Light2D>();

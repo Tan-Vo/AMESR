@@ -81,7 +81,7 @@ public sealed class PlayerController : MonoBehaviour
         grounded = !IsUnderwater && Physics2D.OverlapBox(groundCheck != null ? groundCheck.position : transform.position + Vector3.down * 0.45f, groundCheckSize, 0f, groundLayer) != null;
         if (grounded) coyoteTimeCounter = coyoteTimeDuration;
         else coyoteTimeCounter = Mathf.Max(0f, coyoteTimeCounter - Time.fixedDeltaTime);
-        if (stats.IsDead() || stateMachine.MovementLocked)
+        if (stats.IsDead() || stateMachine.MovementLocked || stateMachine.CurrentState == PlayerState.GrappleSwinging)
         {
             if (stats.IsDead()) rb.linearVelocity = Vector2.zero;
             jumpBufferCounter = 0f;

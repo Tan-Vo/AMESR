@@ -92,6 +92,18 @@ internal static class CoreTests
         int[] frequencies = new int[3];
         for (int i = 0; i < 1000; i++) frequencies[WeightedSelection.SelectIndex(new int[] { 70, 25, 5 }, (i + 0.5) / 1000)]++;
         Check(frequencies[0] == 700 && frequencies[1] == 250 && frequencies[2] == 50, "70/25/5 distribution");
-        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (Timer + SaveData + OxygenMath + WeightedSelection; no Unity runtime).");
+        Check(Math.Abs(TensionMath.Step(0.4f, true, false, false, 1f) - 0.52f) < 0.0001f, "reeling adds tension");
+        Check(TensionMath.Step(0.1f, false, false, false, 1f) == 0f, "rest clamps tension at zero");
+        Check(TensionMath.Step(0.9f, true, true, true, 1f) == 1f, "tug snaps at full tension");
+        Check(TensionMath.Step(0.5f, true, false, false, 0f) == 0.5f, "zero elapsed tension unchanged");
+        Check(Math.Abs(TensionMath.ReelSpeed(3f, 1f, 1f, 0.5f, false) - 2.4f) < 0.0001f, "sweet spot mass ratio");
+        Check(TensionMath.ReelSpeed(3f, 1f, 10f, 0.5f, false) < TensionMath.ReelSpeed(3f, 1f, 1f, 0.5f, false), "heavy creatures resist");
+        rejected = false;
+        try { TensionMath.Step(0f, true, false, false, -1f); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "negative tension delta rejected");
+        rejected = false;
+        try { TensionMath.ReelSpeed(float.NaN, 1f, 1f, 0f, false); } catch (ArgumentOutOfRangeException) { rejected = true; }
+        Check(rejected, "nonfinite reel speed rejected");
+        Console.WriteLine($"Core logic tests: {checks} passed, 0 failed (Timer + SaveData + OxygenMath + WeightedSelection + TensionMath; no Unity runtime).");
     }
 }
