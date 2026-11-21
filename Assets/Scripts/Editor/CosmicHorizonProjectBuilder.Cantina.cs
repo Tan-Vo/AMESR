@@ -80,7 +80,8 @@ public static partial class CosmicHorizonProjectBuilder
     }
     private static void BuildCantinaScene(Scene scene, GameObject playerPrefab, GameObject customerPrefab)
     {
-        if (scene.GetRootGameObjects().Any(root => root.GetComponent<CantinaManager>() != null)) return;
+        var existing = scene.GetRootGameObjects().FirstOrDefault(root => root.GetComponent<CantinaManager>() != null);
+        if (existing != null) { EnsureCantinaPreparationExit(existing.GetComponent<MenuSetup>()); return; }
         var root = new GameObject("CantinaService");
         var manager = root.AddComponent<CantinaManager>(); WireChannels(manager);
         var kitchen = root.AddComponent<KitchenQueue>(); WireChannels(kitchen);
@@ -141,7 +142,13 @@ public static partial class CosmicHorizonProjectBuilder
         open.text = "OPEN CANTINA"; open.raycastTarget = true;
         var openButton = open.gameObject.AddComponent<Button>(); openButton.targetGraphic = open;
         UnityEventTools.AddPersistentListener(openButton.onClick, menu.Open);
-        Navigation(prep.transform, "Return to hub", new Vector2(0, -220), UICommand.Hub);
+        EnsureCantinaPreparationExit(menu);
         new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+    }
+    private static void EnsureCantinaPreparationExit(MenuSetup menu)
+    {
+        if (menu == null) return;
+        var prep = new SerializedObject(menu).FindProperty("prepPanel").objectReferenceValue as GameObject;
+        if (prep != null) Navigation(prep.transform, "Return to hub", new Vector2(0, -220), UICommand.Hub);
     }
 }
