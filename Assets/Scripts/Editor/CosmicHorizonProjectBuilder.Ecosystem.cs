@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,12 +12,29 @@ public static partial class CosmicHorizonProjectBuilder
     private static readonly string[] Fauna = { "abyssal_viper_angler", "biolum_jellyfish_comb", "crystal_isopod_crustacean", "prehistoric_trilobite_shell", "void_electric_eel" };
     private static readonly string[] Fish = { "fish_001_Aurora_Jellyfish", "fish_004_Bony_Wreckfish", "fish_006_Cerebral_Crab" };
     private static SO_CreatureData[] CreatureAssets() => Fauna.Concat(Fish).Select(name => Ensure<SO_CreatureData>("Data/SO_" + name)).ToArray();
+    private static void ClearUrp2DLayerCaches()
+    {
+        var assembly = typeof(Light2D).Assembly;
+        foreach (var cache in new[] { (type: "LayerUtility", field: "s_LayerBatches"), (type: "Light2DManager", field: "s_SortingLayers") })
+        {
+            var field = assembly.GetType("UnityEngine.Rendering.Universal." + cache.type)?.GetField(cache.field, BindingFlags.Static | BindingFlags.NonPublic);
+            if (field == null)
+            {
+                Debug.LogWarning($"Cosmic Horizon: URP 2D cache {cache.type}.{cache.field} was not found; skipping it.");
+                continue;
+            }
+            try { field.SetValue(null, null); }
+            catch (Exception exception) { Debug.LogWarning($"Cosmic Horizon: could not clear URP 2D cache {cache.type}.{cache.field}: {exception.Message}"); }
+        }
+        Debug.LogWarning("Cosmic Horizon updated sorting layers and the render pipeline. If you still see render errors after building the vertical slice, restart Unity.");
+    }
     private static void BuildEcosystemData()
     {
         var pipeline = AssetDatabase.LoadAssetAtPath<RenderPipelineAsset>("Assets/Settings/UniversalRP.asset");
         if (pipeline == null) throw new InvalidOperationException("Missing existing UniversalRP asset.");
         GraphicsSettings.defaultRenderPipeline = pipeline;
         QualitySettings.renderPipeline = pipeline;
+        ClearUrp2DLayerCaches();
         Ensure<SO_CreatureEvent>("Events/OnCreatureReleased");
         Ensure<SO_LootSpawnEvent>("Events/OnLootSpawnRequested");
         Ensure<SO_LootPickupEvent>("Events/OnLootReleased");
