@@ -141,8 +141,14 @@ namespace MachSong
                 dust[i].transform.position = new Vector3(x,y+(gentle ? 0 : .18f*Mathf.Sin(time+i)),0);
             }
 
-            Vector2 desired = new(Mathf.Clamp(run.Pilot.x + (headingLeft ? -.95f : 1.7f),.65f,22.7f),.10f);
+            float halfWidth = camera.orthographicSize*camera.aspect;
+            float padding = Mathf.Min(halfWidth*.66f,7.5f);
+            float lookAhead = Mathf.Min(headingLeft ? .95f : 1.7f,halfWidth*.4f);
+            float centeredX = Mathf.Clamp(run.Pilot.x + (headingLeft ? -lookAhead : lookAhead),
+                RescueRun.WorldLeft+padding,RescueRun.WorldRight-padding);
+            Vector2 desired = new(centeredX,.10f);
             focus = Vector2.Lerp(focus,desired,1-Mathf.Exp(-dt*4.9f));
+            focus.x = Mathf.Clamp(focus.x,run.Pilot.x-halfWidth*.78f,run.Pilot.x+halfWidth*.78f);
             Vector2 shake = Vector2.zero;
             if (!gentle && run.Phase == RescuePhase.Pulse)
             {
