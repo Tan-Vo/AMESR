@@ -213,7 +213,7 @@ public static partial class CosmicHorizonProjectBuilder
                     BuildBossTrigger(scene, i >= 3 && i <= 6 ? i - 3 : 0);
                 }
                 if (names[i] == "SC_NebulaCantina") BuildCantinaScene(scene, playerPrefab, customerPrefab);
-                if (names[i] == "SC_BossArena") BuildBossArena(scene, bossPrefabs);
+                if (names[i] == "SC_BossArena") BuildBossArena(scene, bossPrefabs, playerPrefab);
                 BuildSceneUI(scene);
                 BuildScenePolish(scene);
                 EditorSceneManager.SaveScene(scene, path);
@@ -255,6 +255,15 @@ public static partial class CosmicHorizonProjectBuilder
     private static Sprite SpriteAt(string path)
     {
         string fullPath = "Assets/Sprites/" + path;
+        var frames = AssetDatabase.LoadAllAssetsAtPath(fullPath).OfType<Sprite>()
+            .Where(frame => frame.rect.width < frame.texture.width || frame.rect.height < frame.texture.height)
+            .OrderBy(frame => frame.name, StringComparer.Ordinal).ToArray();
+        if (frames.Length > 0) return frames[0];
+        if (PresentationRules.IsSheetAsset(path))
+        {
+            Debug.LogWarning("Rejected sheet-like sprite: " + fullPath + ". Slice it into unlabelled animation frames or select a single-image asset.");
+            throw new InvalidOperationException("A whole sprite sheet cannot be used as a scene sprite: " + fullPath);
+        }
         var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(fullPath);
         if (sprite == null) throw new InvalidOperationException("Missing imported sprite: " + fullPath);
         return sprite;

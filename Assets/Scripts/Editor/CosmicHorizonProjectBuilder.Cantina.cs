@@ -21,7 +21,7 @@ public static partial class CosmicHorizonProjectBuilder
         {
             var ingredient = i == 0 ? Ensure<SO_ItemData>("Data/SO_AlienMeat") : Ensure<SO_ItemData>("Data/SO_Catch_" + creatures[i - 1].name);
             var sprite = SpriteAt("Dishes/dish_space_" + (i + 1).ToString("000") + ".png");
-            Set(recipes[i], "dishName", i == 0 ? "Cosmic Fillet" : creatures[i - 1].CreatureName + " Platter",
+            Set(recipes[i], "dishName", i == 0 ? "Cosmic Fillet" : PresentationRules.RecipeName(creatures[i - 1].CreatureName + " Platter"),
                 "dishIcon", sprite, "dishSprite", sprite, "basePrice", 50 + i * 20, "cookTime", 3f + i * 0.15f, "servingsPerCook", 1);
             SetArray(recipes[i], "ingredients", 1, (p, j) => { p.FindPropertyRelative("item").objectReferenceValue = ingredient; p.FindPropertyRelative("quantity").intValue = 1; });
         }
@@ -81,33 +81,36 @@ public static partial class CosmicHorizonProjectBuilder
     private static void EnsureCantinaHubButton(Transform prep)
     {
         const string label = "Return to hub";
-        if (prep.Find(label) == null) Navigation(prep, label, new Vector2(0, -360), UICommand.Hub);
+        if (prep.Find(label) == null) Navigation(prep, label, new Vector2(195, -340), UICommand.Hub);
+        prep.Find(label).GetComponent<RectTransform>().sizeDelta = new Vector2(350, 64);
     }
     private static void BuildCantinaMenu(Scene scene, GameObject service)
     {
         var old = scene.GetRootGameObjects().FirstOrDefault(go => go.name == "CantinaCanvas");
         if (old != null) UnityEngine.Object.DestroyImmediate(old);
         var canvas = UICanvas("CantinaCanvas", 200);
-        var prep = Frame(canvas.transform, "MenuPrep", Vector2.zero, new Vector2(1400, 850));
-        ServiceText(prep.transform, "Title", new Vector2(0, 330), new Vector2(1200, 70), 48).text = "NEBULA CANTINA • MENU";
+        var prep = Frame(canvas.transform, "MenuPrep", Vector2.zero, new Vector2(850, 780));
+        Anchor(prep.rectTransform, new Vector2(1, 0.5f), new Vector2(-465, 0));
+        ServiceText(prep.transform, "Title", new Vector2(0, 300), new Vector2(750, 70), 44).text = "NEBULA CANTINA";
         var menu = service.GetComponent<MenuSetup>() ?? service.AddComponent<MenuSetup>();
         var recipes = CantinaRecipes();
-        var status = ServiceText(canvas.transform, "Status", Vector2.zero, new Vector2(200, 500), 26);
-        Anchor(status.rectTransform, new Vector2(0, 0.5f), new Vector2(130, 0));
+        var status = ServiceText(canvas.transform, "Status", Vector2.zero, new Vector2(850, 100), 26);
+        Anchor(status.rectTransform, new Vector2(0, 0), new Vector2(480, 100));
         Set(menu, "cantina", service.GetComponent<CantinaManager>(), "stock", Ensure<SO_IngredientStock>("Data/SO_IngredientStock"), "prepPanel", prep.gameObject, "status", status);
         SetArray(menu, "recipes", recipes.Length, (p, i) => p.objectReferenceValue = recipes[i]);
         var labels = new Text[recipes.Length];
         for (int i = 0; i < recipes.Length; i++)
         {
-            var button = UIButton(prep.transform, recipes[i].DishName, new Vector2(0, 245 - i * 54), null);
-            button.GetComponent<RectTransform>().sizeDelta = new Vector2(1160, 50);
-            button.GetComponent<Image>().pixelsPerUnitMultiplier = 0.5f;
+            var button = UIButton(prep.transform, recipes[i].DishName, new Vector2(-195 + i % 2 * 390, 185 - i / 2 * 108), null);
+            button.GetComponent<RectTransform>().sizeDelta = new Vector2(350, 104);
             labels[i] = button.GetComponentInChildren<Text>(); labels[i].fontSize = 26;
-            labels[i].text = recipes[i].DishName + " • ₡" + recipes[i].BasePrice;
+            labels[i].rectTransform.anchorMin = Vector2.zero; labels[i].rectTransform.anchorMax = Vector2.one;
+            labels[i].rectTransform.offsetMin = new Vector2(18, 4); labels[i].rectTransform.offsetMax = new Vector2(-18, -4);
+            labels[i].text = PresentationRules.RecipeLabel(recipes[i].DishName, recipes[i].BasePrice, 0, false);
             UnityEventTools.AddIntPersistentListener(button.onClick, menu.ToggleRecipe, i);
         }
         SetArray(menu, "recipeLabels", labels.Length, (p, i) => p.objectReferenceValue = labels[i]);
-        UIButton(prep.transform, "Open cantina", new Vector2(0, -270), menu.Open);
+        UIButton(prep.transform, "Open cantina", new Vector2(-195, -340), menu.Open).GetComponent<RectTransform>().sizeDelta = new Vector2(350, 64);
         EnsureCantinaHubButton(prep.transform);
     }
     private static void BuildCantinaScene(Scene scene, GameObject playerPrefab, GameObject customerPrefab)

@@ -4,6 +4,7 @@ using UnityEngine.UI;
 public sealed class HUDManager : MonoBehaviour
 {
     [SerializeField] private SO_SaveSession session;
+    [SerializeField] private bool diveHUD = true;
     [SerializeField] private SO_InventoryAccess inventory;
     [SerializeField] private SO_FloatEvent onHPChanged, onOxygenChanged, onFuelChanged, onDepthChanged;
     [SerializeField] private SO_WeaponHUDEvent onWeaponHUDChanged;
@@ -28,24 +29,26 @@ public sealed class HUDManager : MonoBehaviour
     private void Depth(float value) { depth = value; }
     private void Weapon(SO_WeaponData data, int ammo, bool reloading)
     {
-        if (data == null) return;
+        if (!diveHUD || data == null) return;
         weaponIcon.sprite = data.Icon;
         weaponLabel.text = data.WeaponName + "  " + (data.WeaponType == WeaponType.Harpoon || data.WeaponType == WeaponType.PlasmaBlade ? "∞" : ammo.ToString()) + (reloading ? " Reloading…" : "");
     }
     private void Update()
     {
+        if (!diveHUD) return;
         for (int i = 0; i < 5; i++)
             if (Input.GetKeyDown(KeyCode.F1 + i)) inventory.Use(inventory.ConsumableIndex(i));
     }
     private void LateUpdate()
     {
+        creditsLabel.text = "₡ " + session.Data.Credits.ToString("N0");
+        if (!diveHUD) { depthLabel.text = "DAY " + session.Data.CurrentDay; return; }
         healthFill.fillAmount = hp; oxygenFill.fillAmount = oxygen; fuelFill.fillAmount = fuel;
         oxygenFill.color = oxygen < 0.2f ? Color.Lerp(Color.red, Color.white, (Mathf.Sin(Time.unscaledTime * 8f) + 1) * 0.5f) : Color.cyan;
         healthLabel.text = "HP " + Mathf.CeilToInt(hp * 100) + "/100"; oxygenLabel.text = "O₂ " + Mathf.CeilToInt(oxygen * 100) + "%"; fuelLabel.text = "FUEL " + Mathf.CeilToInt(fuel * 100) + "%";
         string biomeName = "Surface";
         foreach (var biome in biomes) if (depth >= biome.DepthMin && depth < biome.DepthMax) { biomeName = biome.BiomeName; depthLabel.color = biome.WaterTintColor * 2f; break; }
         depthLabel.text = depth.ToString("0") + "m • " + biomeName + "\nDAY " + session.Data.CurrentDay;
-        creditsLabel.text = "₡ " + session.Data.Credits.ToString("N0");
         quickLabel.text = "I: cargo • F1–F5: consumables • Esc: pause";
         depthFill.fillAmount = Mathf.Clamp01(depth / 3000f); depthFill.color = depthLabel.color;
     }

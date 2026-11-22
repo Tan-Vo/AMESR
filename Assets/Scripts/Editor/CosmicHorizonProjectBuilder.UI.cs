@@ -160,11 +160,12 @@ public static partial class CosmicHorizonProjectBuilder
         {
             var legacy = scene.GetRootGameObjects().FirstOrDefault(go => go.name == "BossHUD"); if (legacy != null) legacy.SetActive(false);
             var arena = scene.GetRootGameObjects().Select(go => go.GetComponent<BossArenaDirector>()).First(value => value != null);
-            var panel = Frame(root, "BossHealth", new Vector2(0, 440), new Vector2(1200, 100), "ui_bar_frame");
-            var fill = BarFill(panel.transform, "Fill", new Vector2(1140, 58), new Color(0.2f, 0.55f, 0.35f));
+            var panel = Frame(root, "BossHealth", new Vector2(0, 440), new Vector2(820, 100), "ui_bar_frame");
+            var fill = BarFill(panel.transform, "Fill", new Vector2(760, 58), new Color(0.2f, 0.55f, 0.35f));
             var bar = obj.AddComponent<BossHealthBarUI>();
-            var label = ServiceText(panel.transform, "Name", Vector2.zero, new Vector2(1100, 70), 44); label.text = "ABYSSAL SIGNAL";
-            Set(bar, "arena", arena, "panel", panel.rectTransform, "fill", fill, "label", label); return;
+            var label = ServiceText(panel.transform, "Name", Vector2.zero, new Vector2(760, 70), 44); label.text = "ABYSSAL MAW • I";
+            Set(bar, "arena", arena, "panel", panel.rectTransform, "fill", fill, "label", label);
+            Set(arena, "standaloneHUD", BuildHUD(root)); return;
         }
         foreach (var player in scene.GetRootGameObjects().Where(go => go.GetComponent<PlayerController>() != null))
         {
@@ -193,9 +194,9 @@ public static partial class CosmicHorizonProjectBuilder
         else
         {
             Navigation(root, "Return to hub", Vector2.zero, UICommand.Hub);
-            Anchor(root.Find("Return to hub").GetComponent<RectTransform>(), new Vector2(1, 0), new Vector2(-230, 210));
+            Anchor(root.Find("Return to hub").GetComponent<RectTransform>(), new Vector2(1, 0), new Vector2(-230, 280));
         }
-        BuildHUD(root); BuildInventory(root, scene.name == "SC_Mothership" || scene.name == "SC_NebulaCantina");
+        BuildHUD(root, PresentationRules.IsDiveScene(scene.name)); BuildInventory(root, scene.name == "SC_Mothership" || scene.name == "SC_NebulaCantina");
         var pausePanel = Frame(root, "Pause", Vector2.zero, new Vector2(900, 850));
         ServiceText(pausePanel.transform, "Title", new Vector2(0, 320), new Vector2(700, 70), 48).text = "PAUSED";
         var pause = obj.AddComponent<PauseMenuUI>(); WireChannels(pause); Set(pause, "panel", pausePanel.gameObject, "settings", settings);
@@ -204,18 +205,31 @@ public static partial class CosmicHorizonProjectBuilder
         for (int i = 0; i < labels.Length; i++) { var button = UIButton(pausePanel.transform, labels[i], new Vector2(0, 200 - i * 100), actions[i]); if (i == 2) Set(pause, "saveButton", button); }
         pausePanel.gameObject.SetActive(false); settings.transform.SetAsLastSibling();
     }
-    private static void BuildHUD(Transform root)
+    private static GameObject BuildHUD(Transform parent, bool dive = true)
     {
-        var hud = root.gameObject.AddComponent<HUDManager>(); WireChannels(hud); Set(hud, "inventory", Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess"));
+        var group = new GameObject(dive ? "DiveHUD" : "HubHUD", typeof(RectTransform));
+        group.transform.SetParent(parent, false); var rect = group.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one; rect.offsetMin = rect.offsetMax = Vector2.zero;
+        var root = group.transform; var hud = group.AddComponent<HUDManager>(); WireChannels(hud);
+        Set(hud, "diveHUD", dive, "inventory", Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess"));
         SetArray(hud, "biomes", 4, (p, i) => p.objectReferenceValue = BiomeAssets()[i]);
+        var dayChip = Frame(root, "DayChip", Vector2.zero, new Vector2(420, dive ? 120 : 84), "ui_panel_small"); dayChip.raycastTarget = false;
+        Anchor(dayChip.rectTransform, new Vector2(1, 1), new Vector2(-260, dive ? -100 : -70));
+        var depthLabel = ServiceText(dayChip.transform, "Day", Vector2.zero, new Vector2(370, dive ? 90 : 60), 28);
+        depthLabel.text = dive ? "SURFACE • DAY 1" : "DAY 1";
+        var creditsChip = Frame(root, "CreditsChip", Vector2.zero, new Vector2(320, 84), "ui_panel_small"); creditsChip.raycastTarget = false;
+        Anchor(creditsChip.rectTransform, new Vector2(1, 0), new Vector2(-200, 100));
+        var credits = ServiceText(creditsChip.transform, "Credits", Vector2.zero, new Vector2(280, 60), 30); credits.text = "₡ 0";
+        Set(hud, "depthLabel", depthLabel, "creditsLabel", credits);
+        if (!dive) return group;
         var depth = Frame(root, "DepthGauge", Vector2.zero, new Vector2(28, 210), "ui_bar_frame"); depth.raycastTarget = false;
         Anchor(depth.rectTransform, new Vector2(1, 1), new Vector2(-36, -210));
         Set(hud, "depthFill", BarFill(depth.transform, "Fill", new Vector2(12, 180), Color.cyan, true));
         for (int i = 0; i < 5; i++)
         {
-            var button = UIButton(root, "", Vector2.zero, null); var rect = button.GetComponent<RectTransform>(); rect.sizeDelta = new Vector2(88, 88);
+            var button = UIButton(root, "", Vector2.zero, null); var buttonRect = button.GetComponent<RectTransform>(); buttonRect.sizeDelta = new Vector2(88, 88);
             button.GetComponent<Image>().sprite = Kit("ui_slot"); button.transition = Selectable.Transition.ColorTint;
-            Anchor(rect, new Vector2(0.5f, 0), new Vector2(-208 + i * 104, 116));
+            Anchor(buttonRect, new Vector2(0.5f, 0), new Vector2(-208 + i * 104, 116));
             var label = button.GetComponentInChildren<Text>(); label.rectTransform.anchorMin = label.rectTransform.anchorMax = new Vector2(0.5f, 0);
             label.rectTransform.sizeDelta = new Vector2(88, 32); label.rectTransform.anchoredPosition = new Vector2(0, 16); label.fontSize = 26;
             var quick = button.gameObject.AddComponent<QuickSlotUI>(); Set(quick, "inventory", Ensure<SO_InventoryAccess>("Data/SO_InventoryAccess"), "index", i,
@@ -232,19 +246,13 @@ public static partial class CosmicHorizonProjectBuilder
             var label = ServiceText(frame.transform, "Label", Vector2.zero, new Vector2(360, 44), 28); label.text = text[i];
             Set(hud, names[i] + "Fill", fill, names[i] + "Label", label);
         }
-        var depthChip = Frame(root, "DepthChip", Vector2.zero, new Vector2(420, 120), "ui_panel_small"); depthChip.raycastTarget = false;
-        Anchor(depthChip.rectTransform, new Vector2(1, 1), new Vector2(-260, -100));
-        var depthLabel = ServiceText(depthChip.transform, "Depth", Vector2.zero, new Vector2(370, 90), 28); depthLabel.text = "SURFACE • DAY 1";
-        var creditsChip = Frame(root, "CreditsChip", Vector2.zero, new Vector2(320, 84), "ui_panel_small"); creditsChip.raycastTarget = false;
-        Anchor(creditsChip.rectTransform, new Vector2(1, 0), new Vector2(-200, 100));
-        var credits = ServiceText(creditsChip.transform, "Credits", Vector2.zero, new Vector2(280, 60), 30); credits.text = "₡ 0";
         var weaponChip = Frame(root, "WeaponChip", Vector2.zero, new Vector2(470, 90), "ui_panel_small"); weaponChip.raycastTarget = false;
         Anchor(weaponChip.rectTransform, new Vector2(0, 0), new Vector2(280, 100));
         var weapon = ServiceText(weaponChip.transform, "Weapon", new Vector2(40, 0), new Vector2(330, 68), 26); weapon.text = "GRAVITY HARPOON";
         var hint = ServiceText(root, "QuickSlots", Vector2.zero, new Vector2(1600, 44), 26); hint.text = "I: cargo • F1–F5: consumables • Esc: pause";
         Anchor(hint.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 34));
-        Set(hud, "depthLabel", depthLabel, "creditsLabel", credits, "weaponLabel", weapon,
-            "weaponIcon", UIIcon(weaponChip.transform, "WeaponIcon", new Vector2(-180, 0), new Vector2(54, 54), Ensure<SO_WeaponData>("Data/SO_BasicHarpoon").Icon), "quickLabel", hint);
+        Set(hud, "weaponLabel", weapon, "weaponIcon", UIIcon(weaponChip.transform, "WeaponIcon", new Vector2(-180, 0), new Vector2(54, 54), Ensure<SO_WeaponData>("Data/SO_BasicHarpoon").Icon), "quickLabel", hint);
+        return group;
     }
     private static void BuildInventory(Transform root, bool sell)
     {
@@ -301,8 +309,8 @@ public static partial class CosmicHorizonProjectBuilder
     {
         var manager = scene.GetRootGameObjects().Select(go => go.GetComponent<CantinaManager>()).First(value => value != null);
         var hud = root.gameObject.AddComponent<CantinaHUD>(); WireChannels(hud);
-        var summary = ServiceText(root, "CantinaHUD", Vector2.zero, new Vector2(950, 90), 28); summary.text = "NEBULA CANTINA • PREPARATION";
-        Anchor(summary.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -70));
+        var summary = ServiceText(root, "CantinaHUD", Vector2.zero, new Vector2(850, 110), 28); summary.text = "REVENUE ₡0 • PREPARATION";
+        Anchor(summary.rectTransform, new Vector2(0, 1), new Vector2(480, -90));
         Set(hud, "cantina", manager, "stock", Ensure<SO_IngredientStock>("Data/SO_IngredientStock"), "summary", summary);
         var report = root.gameObject.AddComponent<NightReportUI>(); WireChannels(report);
         var panel = Frame(root, "NightReport", Vector2.zero, new Vector2(1100, 850));

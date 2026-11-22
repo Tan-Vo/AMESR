@@ -1,5 +1,7 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
+[DefaultExecutionOrder(-500)]
 public sealed class BossArenaDirector : MonoBehaviour
 {
     [SerializeField] private SO_BossEncounterEvent onBossEncounterRequested;
@@ -19,6 +21,9 @@ public sealed class BossArenaDirector : MonoBehaviour
     [SerializeField] private SO_ItemData[] rareLoot;
     [SerializeField] private Sprite jellyfishAdd;
     [SerializeField] private Sprite whaleAdd;
+    [SerializeField] private GameObject standalonePlayer, standaloneHUD, encounterPreview;
+    [SerializeField] private SO_IntEvent onStateEntered;
+    private bool standalone;
     private readonly BossHazard[] hazards = new BossHazard[160];
     private readonly BossAdd[] adds = new BossAdd[8];
     private readonly LootPickup[] drops = new LootPickup[30];
@@ -27,6 +32,15 @@ public sealed class BossArenaDirector : MonoBehaviour
     public Vector2 Center => onBossEncounterRequested.Center;
     public BossBase CurrentBoss { get; private set; }
     public bool Finished { get; private set; }
+    private void Awake()
+    {
+        standalone = PresentationRules.StartStandaloneArena(SceneManager.sceneCount, onBossEncounterRequested.InProgress);
+        if (encounterPreview != null) encounterPreview.SetActive(false);
+        if (standalonePlayer != null) standalonePlayer.SetActive(standalone);
+        if (standaloneHUD != null) standaloneHUD.SetActive(standalone);
+        if (standalone && standalonePlayer != null) onBossEncounterRequested.BeginStandalone(BossKind.AbyssalMaw, standalonePlayer.transform, Vector2.zero);
+    }
+    private void OnDestroy() { if (standalone) onBossEncounterRequested?.Clear(); }
     private void OnEnable()
     {
         onPlayerDied?.RegisterListener(Abort); onEmergencySurface?.RegisterListener(Abort);
@@ -40,6 +54,7 @@ public sealed class BossArenaDirector : MonoBehaviour
     private void Start()
     {
         if (Player == null || !onBossEncounterRequested.InProgress) return;
+        if (standalone) onStateEntered?.Raise((int)GameState.BossFight);
         transform.position = Center;
         onPlayerEffectRequested?.Raise(PlayerEffectKind.Teleport, Center + Vector2.left * 8f);
         var pool = bossPools[(int)onBossEncounterRequested.Kind];

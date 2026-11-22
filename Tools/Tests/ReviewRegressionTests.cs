@@ -5,6 +5,28 @@ internal static class ReviewRegressionTests
 {
     internal static void Run(Action<bool, string> check)
     {
+        foreach (string marker in new[] { "matrix", "MASTER", "spritesheet", "sheet", "grid" })
+            check(PresentationRules.IsSheetAsset("Creatures/fauna_" + marker + ".png"), "reject named sheet " + marker);
+        check(PresentationRules.IsSheetAsset(null) && PresentationRules.IsSheetAsset(""), "missing sprite selection rejected");
+        check(PresentationRules.IsSheetAsset("Bosses/boss_chrono_jellyfish_main.png") && PresentationRules.IsSheetAsset("Assets\\Sprites\\Bosses\\boss_abyssal_maw_main_phase2.png"), "unlabelled boss sheet exports rejected");
+        check(!PresentationRules.IsSheetAsset("Creatures/fauna_biolum_jellyfish_comb_01.png") && !PresentationRules.IsSheetAsset("UI/Kit/ui_panel.png"), "single frame and UI sprite accepted");
+        foreach (string scene in new[] { "SC_DiveZone1_Shallows", "SC_DiveZone2_Twilight", "SC_DiveZone3_Abyssal", "SC_DiveZone4_EventHorizon", "SC_Tutorial", "SC_BossArena" })
+            check(PresentationRules.IsDiveScene(scene), "dive HUD included in " + scene);
+        foreach (string scene in new[] { "SC_Mothership", "SC_NebulaCantina", "SC_MainMenu", "", null })
+            check(!PresentationRules.IsDiveScene(scene), "dive HUD excluded from " + scene);
+        check(PresentationRules.StartStandaloneArena(1, false), "direct arena entry starts encounter");
+        check(!PresentationRules.StartStandaloneArena(2, false) && !PresentationRules.StartStandaloneArena(2, true) && !PresentationRules.StartStandaloneArena(1, true), "additive or active encounter never duplicates player or boss");
+        check(!PresentationRules.StartStandaloneArena(0, false) && !PresentationRules.StartStandaloneArena(-1, false), "invalid scene counts do not bootstrap arena");
+        check(PresentationRules.RecipeName("abyssal_viper angler Platter") == "Abyssal Viper Angler Platter", "recipe names title-cased");
+        check(PresentationRules.RecipeName(null) == "Unknown Dish" && PresentationRules.RecipeName(" ") == "Unknown Dish", "empty recipe name is readable");
+        check(PresentationRules.RecipeLabel("cosmic fillet", 50, 0, false) == "Cosmic Fillet\n₡50 • 0 servings", "two-line recipe label includes empty stock");
+        check(PresentationRules.RecipeLabel("cosmic fillet", 50, 2, true) == "✓ Cosmic Fillet\n₡50 • 2 servings", "selected recipe keeps availability");
+        bool invalidLabel = false;
+        try { PresentationRules.RecipeLabel("fish", -1, 0, false); } catch (ArgumentOutOfRangeException) { invalidLabel = true; }
+        check(invalidLabel, "invalid recipe price rejected");
+        invalidLabel = false;
+        try { PresentationRules.RecipeLabel("fish", 1, -1, false); } catch (ArgumentOutOfRangeException) { invalidLabel = true; }
+        check(invalidLabel, "invalid recipe stock rejected");
         var stacks = new List<InventorySlotData> {
             new InventorySlotData { ItemId = "fish", Quantity = 1 }, new InventorySlotData { ItemId = "medkit", Quantity = 2 } };
         var selected = stacks[1]; stacks.RemoveAt(0);

@@ -115,14 +115,20 @@ public static partial class CosmicHorizonProjectBuilder
         anchor.tag = "GrapplePoint";
         anchor.GetComponent<CircleCollider2D>().radius = 0.65f;
         anchor.GetComponent<CircleCollider2D>().isTrigger = true;
-        anchor.GetComponent<SpriteRenderer>().sprite = SpriteAt("Tilesets/tile_008.png");
+        anchor.GetComponent<SpriteRenderer>().sprite = SpriteAt("UI_Icons/gear_cosmic_hook.png");
         anchor.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
         anchor.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Front";
         PrefabUtility.SaveAsPrefabAsset(anchor, "Assets/Prefabs/Diving/PF_GrapplePoint.prefab");
     }
     private static void BuildDivingScene(Scene scene, Transform player)
     {
-        if (scene.GetRootGameObjects().Any(root => root.name == "DiveResources")) return;
+        var existing = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "DiveResources");
+        if (existing != null)
+        {
+            foreach (var renderer in existing.GetComponentsInChildren<SpriteRenderer>())
+                if (renderer.CompareTag("GrapplePoint")) renderer.sprite = SpriteAt("UI_Icons/gear_cosmic_hook.png");
+            return;
+        }
         var root = new GameObject("DiveResources");
         for (int i = 0; i < 6; i++)
         {

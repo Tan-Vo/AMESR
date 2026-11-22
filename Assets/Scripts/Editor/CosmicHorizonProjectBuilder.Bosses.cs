@@ -6,7 +6,8 @@ using UnityEngine.SceneManagement;
 public static partial class CosmicHorizonProjectBuilder
 {
     private static readonly string[] BossNames = { "AbyssalMaw", "ChronoJellyfish", "VoidLeviathan" };
-    private static readonly string[] BossSprites = { "abyssal_maw", "chrono_jellyfish", "void_whale" };
+    private static readonly string[] BossBodies = { "Creatures/fauna_abyssal_viper_angler_01.png", "Creatures/fauna_biolum_jellyfish_comb_01.png", "Bosses/mini_boss_064.png" };
+    private static readonly string[] BossPhaseBodies = { "Creatures/fauna_abyssal_viper_angler_02.png", "Creatures/fauna_biolum_jellyfish_comb_02.png", "Bosses/mini_boss_068.png" };
     private static void BuildBossData()
     {
         Ensure<SO_BossEncounterEvent>("Events/OnBossEncounterRequested");
@@ -24,7 +25,7 @@ public static partial class CosmicHorizonProjectBuilder
         {
             var data = Ensure<SO_CreatureData>("Data/SO_Boss_" + BossNames[i]);
             Set(data, "creatureName", BossNames[i], "maxHP", 300 + i * 100, "mass", 100f,
-                "behaviorType", (int)CreatureBehavior.Boss, "icon", SpriteAt("Bosses/boss_" + BossSprites[i] + "_main.png"));
+                "behaviorType", (int)CreatureBehavior.Boss, "icon", SpriteAt(BossBodies[i]));
             SetArray(data, "lootTable", 1, (p, j) =>
             {
                 p.FindPropertyRelative("item").objectReferenceValue = core;
@@ -51,8 +52,8 @@ public static partial class CosmicHorizonProjectBuilder
             obj.GetComponent<SpriteRenderer>().sortingLayerName = "Creatures_Front";
             BossBase boss = i == 0 ? obj.AddComponent<Boss_AbyssalMaw>() : i == 1 ? obj.AddComponent<Boss_ChronoJellyfish>() : obj.AddComponent<Boss_VoidWhale>();
             WireChannels(boss);
-            Set(boss, "bossData", data, "phase2Sprite", SpriteAt("Bosses/boss_" + BossSprites[i] + "_main_phase2.png"),
-                "attackSprite", SpriteAt("Bosses/boss_" + BossSprites[i] + "_main_attack_fx.png"));
+            Set(boss, "bossData", data, "phase2Sprite", SpriteAt(BossPhaseBodies[i]),
+                "attackSprite", SpriteAt("VFX/hazard_gravity_vortex_rift_01.png"));
             BuildDamageReceiver(obj, boss);
             prefabs[i] = PrefabUtility.SaveAsPrefabAsset(obj, "Assets/Prefabs/Bosses/PF_Boss_" + BossNames[i] + ".prefab");
         }
@@ -74,9 +75,10 @@ public static partial class CosmicHorizonProjectBuilder
         PrefabUtility.SaveAsPrefabAsset(add, "Assets/Prefabs/Bosses/PF_BossAdd.prefab");
         return prefabs;
     }
-    private static void BuildBossArena(Scene scene, GameObject[] bosses)
+    private static void BuildBossArena(Scene scene, GameObject[] bosses, GameObject playerPrefab)
     {
-        if (scene.GetRootGameObjects().Any(root => root.GetComponent<BossArenaDirector>() != null)) return;
+        var existing = scene.GetRootGameObjects().FirstOrDefault(root => root.GetComponent<BossArenaDirector>() != null);
+        if (existing != null) { ConfigureArenaPresentation(scene, existing, playerPrefab); return; }
         var root = new GameObject("BossArena");
         var director = root.AddComponent<BossArenaDirector>(); WireChannels(director);
         var pools = new BossPool[bosses.Length];
@@ -91,7 +93,7 @@ public static partial class CosmicHorizonProjectBuilder
         var lootPool = Pool<LootDropPool>(root.transform, "BossLootPool", loot.GetComponent<LootPickup>());
         Set(director, "hazardPool", hazardPool, "addPool", addPool, "lootPool", lootPool,
             "legendaryLoot", Ensure<SO_ItemData>("Data/SO_LegendaryBossCore"),
-            "jellyfishAdd", SpriteAt("Bosses/mini_boss_001.png"), "whaleAdd", SpriteAt("Bosses/mini_boss_002.png"));
+            "jellyfishAdd", SpriteAt(BossBodies[1]), "whaleAdd", SpriteAt(BossBodies[2]));
         string[] rares = { "QuantumCrystal", "ExoticMatter", "VoidEssence" };
         SetArray(director, "rareLoot", rares.Length, (p, i) => p.objectReferenceValue = Ensure<SO_ItemData>("Data/SO_" + rares[i]));
         ArenaWall(root.transform, "Floor", new Vector2(0, -7.5f), new Vector2(36, 1));
@@ -104,24 +106,54 @@ public static partial class CosmicHorizonProjectBuilder
         var phases = root.AddComponent<BossPhaseManager>();
         WireChannels(phases);
         Set(phases, "arena", director, "bossLabel", label);
+        ConfigureArenaPresentation(scene, root, playerPrefab);
+    }
+    private static void ConfigureArenaPresentation(Scene scene, GameObject root, GameObject playerPrefab)
+    {
+        var director = root.GetComponent<BossArenaDirector>(); WireChannels(director);
+        foreach (var collider in root.GetComponentsInChildren<BoxCollider2D>())
+        {
+            var art = collider.GetComponent<SpriteRenderer>(); if (art != null) art.enabled = false;
+        }
+        var player = scene.GetRootGameObjects().FirstOrDefault(go => go.name == "ArenaPlayer");
+        if (player == null) { player = (GameObject)PrefabUtility.InstantiatePrefab(playerPrefab, scene); player.name = "ArenaPlayer"; }
+        player.transform.position = new Vector3(-8, 0, 0);
+        foreach (string name in new[] { "WeaponStatus", "DiveControls" })
+        {
+            var legacy = player.transform.Find("VitalsCanvas/" + name); if (legacy != null) legacy.gameObject.SetActive(false);
+        }
+        var preview = root.transform.Find("EncounterPreview");
+        if (preview == null) { preview = new GameObject("EncounterPreview", typeof(SpriteRenderer)).transform; preview.SetParent(root.transform, false); }
+        preview.localPosition = new Vector3(10, 1, 0); preview.localScale = Vector3.one * 3f;
+        var sprite = preview.GetComponent<SpriteRenderer>(); sprite.sprite = SpriteAt(BossBodies[0]); sprite.sortingLayerName = "Creatures_Front";
+        Set(director, "standalonePlayer", player, "encounterPreview", preview.gameObject);
+        var light = root.transform.Find("ArenaLight");
+        if (light == null) { light = new GameObject("ArenaLight", typeof(UnityEngine.Rendering.Universal.Light2D)).transform; light.SetParent(root.transform, false); }
+        var ambient = light.GetComponent<UnityEngine.Rendering.Universal.Light2D>(); ambient.lightType = UnityEngine.Rendering.Universal.Light2D.LightType.Point;
+        ambient.pointLightOuterRadius = 50; ambient.intensity = 1;
+        var layers = SortingLayer.layers; SetArray(ambient, "m_ApplyToSortingLayers", layers.Length, (p, i) => p.intValue = layers[i].id);
+        if (root.transform.Find("ArenaWater") == null)
+        {
+            var water = new GameObject("ArenaWater", typeof(BoxCollider2D)); water.transform.SetParent(root.transform, false); water.layer = 4; water.tag = "WaterSurface";
+            water.GetComponent<BoxCollider2D>().isTrigger = true; water.GetComponent<BoxCollider2D>().size = new Vector2(36, 18);
+        }
     }
     private static void ArenaWall(Transform root, string name, Vector2 position, Vector2 size)
     {
-        var obj = new GameObject(name, typeof(SpriteRenderer), typeof(BoxCollider2D)); obj.layer = 9;
+        var obj = new GameObject(name, typeof(BoxCollider2D)); obj.layer = 9;
         obj.transform.SetParent(root, false); obj.transform.localPosition = position; obj.transform.localScale = new Vector3(size.x, size.y, 1);
-        obj.GetComponent<SpriteRenderer>().sprite = SpriteAt("Tilesets/tile_008.png");
-        obj.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
-        obj.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Back";
     }
     private static void BuildBossTrigger(Scene scene, int biomeIndex)
     {
-        if (biomeIndex < 1 || biomeIndex > 3 || scene.GetRootGameObjects().Any(obj => obj.GetComponent<BossTrigger>() != null)) return;
+        if (biomeIndex < 1 || biomeIndex > 3) return;
+        var existing = scene.GetRootGameObjects().FirstOrDefault(obj => obj.GetComponent<BossTrigger>() != null);
+        if (existing != null) { existing.GetComponent<SpriteRenderer>().sprite = SpriteAt(BossBodies[biomeIndex - 1]); return; }
         var player = scene.GetRootGameObjects().First(obj => obj.GetComponent<PlayerController>() != null);
         var obj = new GameObject("BossEncounter_" + BossNames[biomeIndex - 1], typeof(BoxCollider2D), typeof(SpriteRenderer), typeof(BossTrigger));
         obj.transform.position = player.transform.position + new Vector3(12, -4, 0);
         obj.layer = 12;
         obj.GetComponent<BoxCollider2D>().isTrigger = true; obj.GetComponent<BoxCollider2D>().size = new Vector2(3, 5);
-        obj.GetComponent<SpriteRenderer>().sprite = SpriteAt("Bosses/boss_" + BossSprites[biomeIndex - 1] + "_main.png");
+        obj.GetComponent<SpriteRenderer>().sprite = SpriteAt(BossBodies[biomeIndex - 1]);
         obj.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Back";
         var trigger = obj.GetComponent<BossTrigger>(); WireChannels(trigger); Set(trigger, "boss", biomeIndex - 1);
         var loader = new GameObject("BossEncounterLoader", typeof(BossEncounterLoader)); WireChannels(loader.GetComponent<BossEncounterLoader>());

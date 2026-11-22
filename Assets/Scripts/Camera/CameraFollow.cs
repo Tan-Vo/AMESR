@@ -19,7 +19,11 @@ public sealed class CameraFollow : MonoBehaviour
     private bool underwater;
     private GameState state;
     private void Awake() { view = GetComponent<Camera>(); position = transform.position; }
-    private void Start() { if (target != null) { previousTarget = target.position; position = new Vector3(target.position.x, target.position.y + offset.y, -10); } }
+    private void Start()
+    {
+        if (onBossEncounterRequested != null && onBossEncounterRequested.InProgress) state = GameState.BossFight;
+        if (target != null) { previousTarget = target.position; position = new Vector3(target.position.x, target.position.y + offset.y, -10); }
+    }
     private void OnEnable() { onStateEntered?.RegisterListener(State); onWaterStateChanged?.RegisterListener(Water); }
     private void OnDisable() { onStateEntered?.UnregisterListener(State); onWaterStateChanged?.UnregisterListener(Water); }
     private void State(int value) { if ((GameState)value != GameState.Paused) state = (GameState)value; }

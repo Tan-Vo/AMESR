@@ -189,6 +189,11 @@ public static partial class CosmicHorizonProjectBuilder
             dock.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
         }
         var camera = scene.GetRootGameObjects().First(root => root.GetComponent<Camera>() != null);
+        var surfaceDock = scene.GetRootGameObjects().First(root => root.name == "SurfaceDock");
+        surfaceDock.transform.localScale = Vector3.one;
+        var dockArt = surfaceDock.GetComponent<SpriteRenderer>(); dockArt.sprite = SpriteAt("Tilesets/tile_006.png");
+        dockArt.drawMode = SpriteDrawMode.Tiled; dockArt.size = new Vector2(6, 1.4f);
+        var dockCollider = surfaceDock.GetComponent<BoxCollider2D>(); dockCollider.size = new Vector2(6, 0.4f); dockCollider.offset = new Vector2(0, -0.4f);
         var view = camera.GetComponent<DiveSceneView>();
         if (view == null) view = camera.AddComponent<DiveSceneView>();
         Set(view, "target", player.transform);
