@@ -13,6 +13,7 @@ args+=("-r:$CORE" "$ROOT/Assets/Scripts/Utilities/Timer.cs" "$ROOT/Assets/Script
 args+=("$ROOT/Assets/Scripts/UI/InventoryMath.cs")
 args+=("$ROOT/Assets/Scripts/Camera/TraumaMath.cs" "$ROOT/Assets/Scripts/Quests/QuestProgressMath.cs")
 args+=("$ROOT/Assets/Scripts/Core/GameState.cs" "$ROOT/Assets/Scripts/Core/CheckpointPolicy.cs" "$ROOT/Assets/Scripts/Core/PhaseClockMath.cs" "$ROOT/Assets/Scripts/Core/RewardLedger.cs" "$ROOT/Assets/Scripts/Cantina/KitchenQueueMath.cs" "$ROOT/Tools/Tests/ReviewRegressionTests.cs")
+args+=("$ROOT/Assets/Scripts/Editor/StoryPalette.cs" "$ROOT/Assets/Scripts/Camera/StoryBackdrop.cs")
 "$DATA/DotNetSdk/dotnet" "$CSC" "${args[@]}"
 cp "$CORE" "$OUT/"
 cp "$ROOT/Tools/Tests/CoreTests.runtimeconfig.json" "$OUT/"

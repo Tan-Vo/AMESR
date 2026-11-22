@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -40,11 +41,12 @@ public static partial class CosmicHorizonProjectBuilder
                 p.FindPropertyRelative("description").stringValue = descriptions[index];
             });
         }
-        for (int i = 0; i < 4; i++)
+        var biomes = BiomeAssets();
+        for (int i = 0; i < biomes.Length; i++)
         {
-            int index = i; var biome = BiomeAssets()[i];
-            Color[] tints = { new Color(0.1f, 0.6f, 0.85f), new Color(0.35f, 0.15f, 0.65f), new Color(0.05f, 0.2f, 0.4f), new Color(0.2f, 0.05f, 0.3f) };
-            Set(biome, "waterTintColor", tints[i], "waterTintIntensity", 0.12f + i * 0.04f, "ambientLightIntensity", 0.9f - i * 0.15f);
+            int index = i; var biome = biomes[i];
+            var palette = StoryPalette.Dive(i);
+            Set(biome, "waterTintColor", palette.Water, "waterTintIntensity", palette.WaterOpacity, "ambientLightIntensity", palette.Ambient);
             string[] layers = { "skybox", "distant", "atmospheric", "midground", "foreground" };
             SetArray(biome, "backgroundTiles", 5, (p, j) => p.objectReferenceValue = SpriteAt("Backgrounds/bg_parallax_" + layers[j] + "_" + (index * 4 + 1).ToString("00") + ".png"));
             SetArray(biome, "environmentProps", 12, (p, j) => p.objectReferenceValue = SpriteAt("Environment/env_coral_" + (index * 12 + j + 1).ToString("000") + ".png"));
@@ -94,7 +96,7 @@ public static partial class CosmicHorizonProjectBuilder
     }
     private static void BuildScenePolish(Scene scene)
     {
-        if (scene.name == "SC_BossArena") return;
+        if (!(StoryPalette.ForScene(scene.name) is StoryPalette palette)) return;
         var roots = scene.GetRootGameObjects();
         var camera = roots.First(go => go.GetComponent<Camera>() != null).GetComponent<Camera>();
         var oldFollow = camera.GetComponent<DiveSceneView>(); if (oldFollow != null) oldFollow.enabled = false;
@@ -102,45 +104,181 @@ public static partial class CosmicHorizonProjectBuilder
         var shake = camera.GetComponent<CameraShake>(); if (shake == null) shake = camera.gameObject.AddComponent<CameraShake>(); WireChannels(shake);
         var player = roots.FirstOrDefault(go => go.GetComponent<PlayerController>() != null);
         if (player != null) Set(follow, "target", player.transform);
-        if (roots.Any(go => go.name == "BiomePresentation")) return;
-        int biomeIndex = scene.name.Contains("Twilight") ? 1 : scene.name.Contains("Abyssal") ? 2 : scene.name.Contains("EventHorizon") ? 3 : 0;
-        var biome = BiomeAssets()[biomeIndex];
-        var root = new GameObject("BiomePresentation"); var parallax = root.AddComponent<ParallaxController>();
-        Set(parallax, "cameraTransform", camera.transform, "automaticScroll", scene.name == "SC_MainMenu" ? 0.8f : 0f);
+        camera.clearFlags = CameraClearFlags.SolidColor;
+        camera.backgroundColor = palette.Sky;
+        camera.allowHDR = true;
+        var cameraData = camera.GetUniversalAdditionalCameraData();
+        cameraData.renderPostProcessing = true;
+
+        var root = roots.FirstOrDefault(go => go.name == "BiomePresentation") ?? new GameObject("BiomePresentation");
+        var volume = GetOrAdd<Volume>(root);
+        cameraData.volumeLayerMask |= 1 << root.layer;
+        volume.sharedProfile = BuildSceneProfile(scene.name, palette);
+        volume.isGlobal = true;
+        volume.priority = 1f;
+
+        string lightingName = scene.name == "SC_NebulaCantina" ? "CantinaLight" : "GlobalLight2D";
+        var lighting = GetOrAdd<Light2D>(roots.FirstOrDefault(go => go.name == lightingName) ?? new GameObject(lightingName));
+        lighting.lightType = Light2D.LightType.Global;
+        lighting.color = Color.Lerp(Color.white, palette.Accent, palette.Biome < 0 ? .18f : .06f);
+        lighting.intensity = palette.Ambient;
+        TargetSortingLayers(lighting, SortingLayer.layers);
+
+        var parallax = GetOrAdd<ParallaxController>(root);
+        var zone = GetOrAdd<BiomeZone>(root);
+        bool divingBackdrop = palette.Backdrop == null;
+        parallax.enabled = divingBackdrop;
+        zone.enabled = divingBackdrop;
+
+        if (!divingBackdrop)
+        {
+            foreach (Transform child in root.transform)
+                if (child.name.StartsWith("Parallax_", StringComparison.Ordinal) || child.name.StartsWith("BiomeProp_", StringComparison.Ordinal))
+                    child.gameObject.SetActive(false);
+            bool mothership = scene.name == "SC_Mothership";
+            var backdrop = GetOrAdd<SpriteRenderer>(PresentationChild(camera.transform, "StoryBackdrop"));
+            backdrop.sprite = SpriteAt("Backgrounds/" + palette.Backdrop);
+            backdrop.color = palette.Scenery;
+            backdrop.sortingLayerName = "BG_Skybox";
+            backdrop.sharedMaterial = mothership ? SpriteLitMaterial() : StoryUnlitMaterial();
+            backdrop.transform.localPosition = new Vector3(0f, 0f, 30f);
+            GetOrAdd<StoryBackdrop>(backdrop.gameObject).Fit(camera);
+
+            if (mothership)
+                StoryLight(root.transform, "BridgeGlow", new Vector2(-5f, 1f), palette.Accent, .35f, 9f, "BG_Skybox");
+            else if (scene.name == "SC_NebulaCantina")
+            {
+                StoryLight(root.transform, "CounterGlow", new Vector2(0f, 2f), palette.Accent, .38f, 6f, "Default", "Environment_Back", "Player");
+                StoryLight(root.transform, "BoothGlow", new Vector2(-6f, 1.5f), new Color(1f, .74f, .39f), .24f, 5f, "Default", "Environment_Back", "Player");
+            }
+            return;
+        }
+
+        var biomes = BiomeAssets();
+        var biome = biomes[palette.Biome];
+        Set(parallax, "cameraTransform", camera.transform, "automaticScroll", 0f);
         var tiles = new SpriteRenderer[15];
-        string[] layers = { "BG_Skybox", "BG_Distant", "BG_Atmospheric", "BG_Midground", "BG_Foreground" };
+        string[] layers = { "BG_Skybox", "BG_Distant", "BG_Atmospheric", "BG_Midground", "BG_Midground" };
+        var unlit = StoryUnlitMaterial();
         for (int i = 0; i < tiles.Length; i++)
         {
-            var obj = new GameObject("Parallax_" + i, typeof(SpriteRenderer)); obj.transform.SetParent(root.transform, false);
-            var sprite = biome.BackgroundTiles[i / 3]; var renderer = obj.GetComponent<SpriteRenderer>();
-            renderer.sprite = sprite; renderer.sortingLayerName = layers[i / 3];
+            int layer = i / 3;
+            var obj = PresentationChild(root.transform, "Parallax_" + i);
+            var renderer = GetOrAdd<SpriteRenderer>(obj);
+            var sprite = biome.BackgroundTiles[layer];
+            renderer.sprite = sprite;
+            renderer.color = palette.Scenery;
+            renderer.sharedMaterial = unlit;
+            renderer.sortingLayerName = layers[layer];
+            renderer.sortingOrder = layer == 4 ? 1 : 0;
             obj.transform.localScale = new Vector3(50f / sprite.bounds.size.x, 22f / sprite.bounds.size.y, 1);
             tiles[i] = renderer;
         }
         SetArray(parallax, "tiles", tiles.Length, (p, i) => p.objectReferenceValue = tiles[i]);
-        var zone = root.AddComponent<BiomeZone>(); WireChannels(zone);
-        SetArray(zone, "biomes", 4, (p, i) => p.objectReferenceValue = BiomeAssets()[i]);
+        WireChannels(zone);
+        SetArray(zone, "biomes", biomes.Length, (p, i) => p.objectReferenceValue = biomes[i]);
         SetArray(zone, "backgroundTiles", tiles.Length, (p, i) => p.objectReferenceValue = tiles[i]);
-        var lighting = roots.Select(go => go.GetComponent<Light2D>()).FirstOrDefault(light => light != null);
-        if (lighting == null)
-        {
-            lighting = new GameObject("GlobalLight2D", typeof(Light2D)).GetComponent<Light2D>();
-            lighting.lightType = Light2D.LightType.Global;
-        }
-        var sorting = SortingLayer.layers;
-        SetArray(lighting, "m_ApplyToSortingLayers", sorting.Length, (p, i) => p.intValue = sorting[i].id);
         Set(zone, "ambient", lighting);
+
+        if (player != null)
+            StoryLight(player.transform, "SuitGlow", new Vector2(0f, .3f), palette.Accent, .22f, 3.5f, "Player", "Creatures_Front", "Environment_Front");
+
         Vector3 origin = player != null ? player.transform.position : Vector3.zero;
         for (int i = 0; i < 12; i++)
         {
-            var prop = new GameObject("BiomeProp_" + i, typeof(SpriteRenderer)); prop.transform.SetParent(root.transform, false);
+            var prop = PresentationChild(root.transform, "BiomeProp_" + i);
             prop.transform.position = origin + new Vector3(-16 + i * 3, -4 - i % 3, 0);
-            prop.GetComponent<SpriteRenderer>().sprite = biome.EnvironmentProps[i]; prop.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Back";
-            prop.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
+            var renderer = GetOrAdd<SpriteRenderer>(prop);
+            renderer.sprite = biome.EnvironmentProps[i];
+            renderer.color = palette.Scenery;
+            renderer.sortingLayerName = "Environment_Back";
+            renderer.sharedMaterial = SpriteLitMaterial();
         }
         if (!scene.name.StartsWith("SC_DiveZone", StringComparison.Ordinal)) return;
-        for (int i = 0; i < 4; i++) BuildEnvironmentHazard(root.transform, origin + new Vector3(-9 + i * 6, -8, 0), (EnvironmentHazardType)i);
+        for (int i = 0; i < 4; i++)
+        {
+            var type = (EnvironmentHazardType)i;
+            if (root.transform.Find(type.ToString()) == null)
+                BuildEnvironmentHazard(root.transform, origin + new Vector3(-9 + i * 6, -8, 0), type);
+            root.transform.Find(type.ToString()).GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
+        }
     }
+
+    private static T GetOrAdd<T>(GameObject obj) where T : Component => obj.GetComponent<T>() ?? obj.AddComponent<T>();
+
+    private static GameObject PresentationChild(Transform parent, string name)
+    {
+        var obj = parent.Find(name)?.gameObject;
+        if (obj == null)
+        {
+            obj = new GameObject(name);
+            obj.transform.SetParent(parent, false);
+        }
+        obj.SetActive(true);
+        return obj;
+    }
+
+    private static void TargetSortingLayers(Light2D light, SortingLayer[] layers) =>
+        SetArray(light, "m_ApplyToSortingLayers", layers.Length, (p, i) => p.intValue = layers[i].id);
+
+    private static void StoryLight(Transform parent, string name, Vector2 position, Color color, float intensity, float radius, params string[] layerNames)
+    {
+        var light = GetOrAdd<Light2D>(PresentationChild(parent, name));
+        light.transform.localPosition = position;
+        light.lightType = Light2D.LightType.Point;
+        light.color = color;
+        light.intensity = intensity;
+        light.pointLightOuterRadius = radius;
+        light.pointLightInnerRadius = radius * .15f;
+        light.overlapOperation = Light2D.OverlapOperation.Additive;
+        TargetSortingLayers(light, SortingLayer.layers.Where(layer => layerNames.Contains(layer.name)).ToArray());
+    }
+
+    private static Material StoryUnlitMaterial()
+    {
+        Folder("Assets/Materials");
+        const string path = "Assets/Materials/M_StoryBackdrop.mat";
+        var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (material != null) return material;
+        var shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+        if (shader == null) throw new InvalidOperationException("URP Sprite-Unlit-Default shader is missing.");
+        material = new Material(shader);
+        AssetDatabase.CreateAsset(material, path);
+        return material;
+    }
+
+    private static VolumeProfile BuildSceneProfile(string sceneName, StoryPalette palette)
+    {
+        var profile = Ensure<VolumeProfile>("Presentation/VP_" + sceneName);
+        var vignette = ProfileOverride<Vignette>(profile);
+        vignette.color.Override(palette.Sky);
+        vignette.intensity.Override(palette.Vignette);
+        vignette.smoothness.Override(.45f);
+        var grade = ProfileOverride<ColorAdjustments>(profile);
+        grade.colorFilter.Override(palette.Grade);
+        grade.postExposure.Override(palette.Exposure);
+        var bloom = ProfileOverride<Bloom>(profile);
+        bloom.threshold.Override(.85f);
+        bloom.intensity.Override(palette.Bloom);
+        bloom.scatter.Override(.55f);
+        EditorUtility.SetDirty(vignette);
+        EditorUtility.SetDirty(grade);
+        EditorUtility.SetDirty(bloom);
+        EditorUtility.SetDirty(profile);
+        return profile;
+    }
+
+    private static T ProfileOverride<T>(VolumeProfile profile) where T : VolumeComponent
+    {
+        if (!profile.TryGet<T>(out var component))
+        {
+            component = profile.Add<T>();
+            AssetDatabase.AddObjectToAsset(component, profile);
+        }
+        component.active = true;
+        return component;
+    }
+
     private static void BuildEnvironmentHazard(Transform parent, Vector3 position, EnvironmentHazardType type)
     {
         var obj = new GameObject(type.ToString(), typeof(SpriteRenderer), typeof(BoxCollider2D), typeof(EnvironmentHazard));
