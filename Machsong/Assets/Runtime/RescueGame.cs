@@ -26,6 +26,7 @@ namespace MachSong
 
         public void Launch()
         {
+            audioBed.ResetMission();
             Run = new RescueRun();
             lastPhase = Run.Phase;
             paused = complete = false;
@@ -39,6 +40,7 @@ namespace MachSong
 
         public void ShowTitle()
         {
+            audioBed.ResetMission();
             Run = null;
             paused = complete = false;
             world.ShowTitle();
@@ -51,6 +53,7 @@ namespace MachSong
         {
             if (Run == null || complete) return;
             paused = !paused;
+            audioBed.PausePulse(paused);
             if (paused)
                 hud.Pause(TogglePause,Launch,ShowTitle,ToggleMute,ToggleMotion,muted,gentle);
             else
