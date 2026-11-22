@@ -115,7 +115,7 @@ public static partial class CosmicHorizonProjectBuilder
         dropdown.transform.Find("Arrow").gameObject.SetActive(false);
         dropdown.captionText.rectTransform.offsetMin = new Vector2(24, 8); dropdown.captionText.rectTransform.offsetMax = new Vector2(-44, -8);
         dropdown.template.sizeDelta = new Vector2(0, 300);
-        var item = dropdown.itemText.GetComponentInParent<Toggle>(); item.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 56);
+        var item = dropdown.itemText.GetComponentInParent<Toggle>(true); item.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 56);
         dropdown.template.Find("Viewport/Content").GetComponent<RectTransform>().sizeDelta = new Vector2(0, 60);
         foreach (var label in dropdown.GetComponentsInChildren<Text>(true)) { label.fontSize = 28; label.color = new Color(0.8f, 0.96f, 1); label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"); }
         dropdown.itemText.rectTransform.offsetMin = new Vector2(28, 4); dropdown.itemText.rectTransform.offsetMax = new Vector2(-20, -4);
