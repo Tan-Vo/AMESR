@@ -10,7 +10,11 @@ using UnityEngine.UI;
 
 public static partial class CosmicHorizonProjectBuilder
 {
-    private static Sprite UIFrame => SpriteAt("UI/hud_control_button_slider_01.png");
+    private static Sprite UIFrame => ArtSprite("ui_panel");
+    private static Sprite UIKey => ArtSprite("ui_button");
+    private static Sprite UIFill => ArtSprite("ui_fill");
+    private static Font UIFont(bool display = false)
+        => AssetDatabase.LoadAssetAtPath<Font>("Assets/Sprites/Horizon/" + (display ? "BarlowCondensed-SemiBold.ttf" : "Barlow-Medium.ttf"));
     private static void BuildUIData()
     {
         Ensure<SO_UICommandEvent>("Events/OnUICommandRequested");
@@ -27,15 +31,17 @@ public static partial class CosmicHorizonProjectBuilder
         foreach (string person in people)
         {
             var dialogue = Ensure<SO_DialogueLine>("Data/SO_Dialogue_" + person);
-            var portrait = AssetDatabase.FindAssets("portrait_" + person + "_ t:Sprite", new[] { "Assets/Sprites/Characters" }).OrderBy(id => id).FirstOrDefault();
-            Set(dialogue, "speakerName", person.ToUpperInvariant(), "portrait", portrait == null ? null : AssetDatabase.LoadAssetAtPath<Sprite>(AssetDatabase.GUIDToAssetPath(portrait)));
-            SetArray(dialogue, "lines", 2, (p, i) => p.stringValue = i == 0 ? "Welcome aboard Cosmic Horizon. The ocean below is full of discoveries." : "Catch ingredients, return safely, and serve the Nebula Cantina. Visit the shop before your next dive.");
+            Set(dialogue, "speakerName", person.ToUpperInvariant(), "portrait", ArtSprite("crew_" + person));
+            SetArray(dialogue, "lines", 2, (p, i) => p.stringValue = i == 0
+                ? "Welcome aboard Cosmic Horizon. The Pelagic Moon is our first stop."
+                : "Bring specimens back to Nebula Cantina. Upgrade your suit before surveying the outer destinations.");
         }
     }
     private static void BuildUIWidgets()
     {
         Folder("Assets/Prefabs/UI");
         var button = Frame(null, "Button", Vector2.zero, new Vector2(250, 52)); button.gameObject.AddComponent<Button>().targetGraphic = button;
+        button.sprite = UIKey;
         WireChannels(button.gameObject.AddComponent<UIAudioFeedback>());
         ServiceText(button.transform, "Label", Vector2.zero, new Vector2(240, 48), 20);
         PrefabUtility.SaveAsPrefabAsset(button.gameObject, "Assets/Prefabs/UI/PF_UIButton.prefab");
@@ -54,7 +60,7 @@ public static partial class CosmicHorizonProjectBuilder
     }
     private static Image UIIcon(Transform parent, string name, Vector2 position, Vector2 size, Sprite sprite)
     {
-        var image = Frame(parent, name, position, size); image.sprite = sprite; image.preserveAspect = true; image.raycastTarget = false; return image;
+        var image = Frame(parent, name, position, size); image.sprite = sprite; image.type = Image.Type.Simple; image.preserveAspect = true; image.raycastTarget = false; return image;
     }
     private static Button UIButton(Transform parent, string text, Vector2 position, UnityAction action)
     {
@@ -69,6 +75,127 @@ public static partial class CosmicHorizonProjectBuilder
         if (depth > 500) text += " ≥" + depth + "m";
         var button = UIButton(parent, text, position, null); var endpoint = button.gameObject.AddComponent<UICommandButton>(); WireChannels(endpoint);
         Set(endpoint, "command", (int)command, "gear", Ensure<SO_GearProfile>("Data/SO_GearProfile"), "requiredDepth", depth); UnityEventTools.AddPersistentListener(button.onClick, endpoint.Click);
+    }
+
+    private static void StyleSceneUI(Scene scene)
+    {
+        var root = scene.GetRootGameObjects().First(go => go.name == "CosmicUI").transform;
+        root.GetComponent<CanvasScaler>().screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+        foreach (var label in root.GetComponentsInChildren<Text>(true))
+        {
+            label.font = UIFont(label.name == "Title" || label.name == "HubTitle" || label.fontSize >= 30);
+            label.color = new Color(0.91f, 0.97f, 1f);
+        }
+        foreach (var image in root.GetComponentsInChildren<Image>(true))
+        {
+            if (image.type == Image.Type.Filled)
+                image.sprite = UIFill;
+            else if (image.type == Image.Type.Sliced && !image.preserveAspect)
+                image.sprite = image.GetComponent<Button>() != null ? UIKey : UIFrame;
+        }
+        if (scene.name == "SC_MainMenu") StyleTitleScreen(root);
+        if (scene.name == "SC_Mothership") StyleMissionBoard(root);
+        if (root.GetComponent<HUDManager>() is HUDManager hud)
+        {
+            int destination = DestinationIndex(scene.name);
+            bool expedition = destination >= 0 || scene.name == "SC_Tutorial";
+            string name = expedition ? DestinationNames[Mathf.Max(0, destination)] : scene.name == "SC_Mothership" ? "Mothership" : "Nebula Cantina";
+            Set(hud, "locationName", name, "showRange", expedition, "showDepth", destination <= 0);
+            var depth = root.Find("Depth")?.GetComponent<Text>();
+            if (depth != null)
+            {
+                depth.alignment = TextAnchor.MiddleRight;
+                depth.font = UIFont(true);
+                depth.fontSize = 29;
+                depth.rectTransform.anchoredPosition = new Vector2(650, 435);
+            }
+            StyleIcon(root, "OxygenIcon", "oxygen");
+            StyleIcon(root, "FuelIcon", "battery");
+            var creditIcon = root.Find("CreditsIcon");
+            if (creditIcon != null) creditIcon.gameObject.SetActive(false);
+            var weaponIcon = root.Find("WeaponIcon");
+            if (weaponIcon != null) weaponIcon.gameObject.SetActive(expedition);
+        }
+    }
+
+    private static void StyleIcon(Transform root, string element, string art)
+    {
+        var icon = root.Find(element)?.GetComponent<Image>();
+        if (icon == null) return;
+        icon.type = Image.Type.Simple;
+        icon.sprite = ArtSprite("item_" + art);
+    }
+
+    private static void StyleTitleScreen(Transform root)
+    {
+        var title = root.Find("Title")?.GetComponent<Text>();
+        if (title == null) return;
+        title.text = "COSMIC\nHORIZON";
+        title.alignment = TextAnchor.MiddleLeft;
+        title.fontSize = 112;
+        title.lineSpacing = 0.83f;
+        title.rectTransform.anchoredPosition = new Vector2(-510, 220);
+        title.rectTransform.sizeDelta = new Vector2(620, 300);
+        var panel = root.Find("TitlePanel")?.GetComponent<Image>();
+        if (panel == null) panel = Frame(root, "TitlePanel", new Vector2(-527, 7), new Vector2(700, 820));
+        panel.color = new Color(0.55f, 0.69f, 0.82f, 0.86f);
+        panel.raycastTarget = false;
+        panel.transform.SetAsFirstSibling();
+        string[] labels = { "New Game", "Continue", "Settings", "Quit" };
+        for (int i = 0; i < labels.Length; i++)
+        {
+            var button = root.Find(labels[i])?.GetComponent<Button>();
+            if (button == null) continue;
+            ResizeButton(button, new Vector2(-593, 0 - i * 78), new Vector2(450, 60));
+        }
+    }
+
+    private static void StyleMissionBoard(Transform root)
+    {
+        var title = root.Find("HubTitle")?.GetComponent<Text>();
+        if (title != null)
+        {
+            title.text = "EXPEDITION TERMINAL";
+            title.fontSize = 36;
+            title.rectTransform.anchoredPosition = new Vector2(-733, 345);
+            title.rectTransform.sizeDelta = new Vector2(385, 55);
+        }
+        string[] names = { "Tutorial", "Shallows", "Twilight", "Abyssal ≥1500m", "EventHorizon ≥2500m", "Cantina", "Sleep", "Claim boss loot", "Talk to crew" };
+        string[] labels = { "Training Dock", DestinationNames[0], DestinationNames[1], DestinationNames[2] + "  ·  1500 m",
+            DestinationNames[3] + "  ·  2500 m", "Nebula Cantina", "End day", "Claim boss loot", "Talk to crew" };
+        for (int i = 0; i < names.Length; i++)
+        {
+            var button = root.Find(names[i])?.GetComponent<Button>();
+            if (button == null) continue;
+            ResizeButton(button, new Vector2(-733, 281 - i * 60), new Vector2(365, 50));
+            button.GetComponentInChildren<Text>().text = labels[i];
+        }
+        var workshop = root.Find("Workshop");
+        if (workshop == null) return;
+        var open = root.Find("Suit workshop")?.GetComponent<Button>();
+        if (open == null)
+        {
+            open = UIButton(root, "Suit workshop", Vector2.zero, null);
+            UnityEventTools.AddBoolPersistentListener(open.onClick, workshop.gameObject.SetActive, true);
+        }
+        ResizeButton(open, new Vector2(-733, -259), new Vector2(365, 50));
+        if (workshop.Find("Close workshop") == null)
+        {
+            var close = UIButton(workshop, "Close workshop", Vector2.zero, null);
+            ResizeButton(close, new Vector2(0, -283), new Vector2(270, 52));
+            UnityEventTools.AddBoolPersistentListener(close.onClick, workshop.gameObject.SetActive, false);
+        }
+        workshop.gameObject.SetActive(false);
+    }
+
+    private static void ResizeButton(Button button, Vector2 position, Vector2 size)
+    {
+        var rect = button.GetComponent<RectTransform>();
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
+        var text = button.GetComponentInChildren<Text>();
+        text.rectTransform.sizeDelta = size - new Vector2(24f, 4f);
+        text.fontSize = 25;
     }
     private static GameObject UISettings(Transform parent)
     {
@@ -127,8 +254,6 @@ public static partial class CosmicHorizonProjectBuilder
             if (legacy != null) legacy.SetActive(false);
             var arena = scene.GetRootGameObjects().Select(go => go.GetComponent<BossArenaDirector>()).First(value => value != null);
             var panel = Frame(root, "BossHealth", new Vector2(0, 440), new Vector2(1000, 70));
-            var bossFrame = AssetDatabase.FindAssets("boss_health_bar_hud t:Sprite").FirstOrDefault();
-            if (bossFrame != null) panel.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(AssetDatabase.GUIDToAssetPath(bossFrame));
             var fill = Frame(panel.transform, "Fill", Vector2.zero, new Vector2(940, 30)); fill.type = Image.Type.Filled; fill.fillMethod = Image.FillMethod.Horizontal;
             var bar = obj.AddComponent<BossHealthBarUI>();
             Set(bar, "arena", arena, "panel", panel.rectTransform, "fill", fill, "label", ServiceText(panel.transform, "Name", Vector2.zero, new Vector2(900, 60), 24));
@@ -198,9 +323,8 @@ public static partial class CosmicHorizonProjectBuilder
             var fill = Frame(frame.transform, "Fill", Vector2.zero, new Vector2(300, 30)); fill.type = Image.Type.Filled; fill.fillMethod = Image.FillMethod.Horizontal; fill.color = colors[i]; fill.raycastTarget = false;
             Set(hud, names[i] + "Fill", fill, names[i] + "Label", ServiceText(frame.transform, "Label", Vector2.zero, new Vector2(290, 38), 18));
         }
-        UIIcon(root, "OxygenIcon", new Vector2(-915, 405), new Vector2(42, 42), SpriteAt("UI_Icons/hud_oxygen_tank.png"));
-        UIIcon(root, "FuelIcon", new Vector2(-915, 350), new Vector2(42, 42), SpriteAt("UI_Icons/hud_jet_thruster_battery.png"));
-        UIIcon(root, "CreditsIcon", new Vector2(680, -420), new Vector2(42, 42), SpriteAt("UI_Icons/hud_gold_coin.png"));
+        UIIcon(root, "OxygenIcon", new Vector2(-915, 405), new Vector2(42, 42), ArtSprite("item_oxygen"));
+        UIIcon(root, "FuelIcon", new Vector2(-915, 350), new Vector2(42, 42), ArtSprite("item_battery"));
         Set(hud, "depthLabel", ServiceText(root, "Depth", new Vector2(700, 430), new Vector2(450, 110), 23),
             "creditsLabel", ServiceText(root, "Credits", new Vector2(790, -420), new Vector2(250, 50), 24),
             "weaponLabel", ServiceText(root, "Weapon", new Vector2(-680, -420), new Vector2(430, 60), 22),

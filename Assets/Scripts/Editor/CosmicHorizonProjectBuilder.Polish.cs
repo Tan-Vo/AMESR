@@ -22,7 +22,7 @@ public static partial class CosmicHorizonProjectBuilder
         Ensure<SO_FloatEvent>("Events/OnSfxVolumeChanged");
         var gear = Ensure<SO_GearProfile>("Data/SO_GearProfile"); WireChannels(gear);
         Set(Ensure<SO_ItemData>("Data/SO_Medkit"), "itemName", "Emergency Medkit", "description", "Restores 25 HP. Use from cargo or F1–F5.",
-            "category", (int)ItemCategory.Consumable, "maxStack", 5, "baseSellPrice", 25, "icon", SpriteAt("UI_Icons/gear_energy_shield_gen.png"));
+            "category", (int)ItemCategory.Consumable, "maxStack", 5, "baseSellPrice", 25, "icon", ArtSprite("item_medkit"));
         string[] titles = { "First Catch", "Deep Diver", "Chef's Kiss", "Maw Hunter", "Crystal Collector", "Night's Profit", "Gear Up", "Chrono Breaker", "Beyond the Horizon", "Void Hunter" };
         string[] descriptions = { "Catch three creatures.", "Reach 200 meters.", "Serve five customers in one night without angry departures.", "Defeat the Abyssal Maw.", "Collect ten quantum crystals.", "Earn 500 credits in one night.", "Upgrade gear to level two.", "Defeat the Chrono Jellyfish.", "Reach 2500 meters.", "Defeat the Void Leviathan." };
         ObjectiveType[] types = { ObjectiveType.CatchCreature, ObjectiveType.ReachDepth, ObjectiveType.ServeCustomers, ObjectiveType.DefeatBoss, ObjectiveType.CollectItem, ObjectiveType.EarnCredits, ObjectiveType.UpgradeGear, ObjectiveType.DefeatBoss, ObjectiveType.ReachDepth, ObjectiveType.DefeatBoss };
@@ -32,7 +32,7 @@ public static partial class CosmicHorizonProjectBuilder
         for (int i = 0; i < quests.Length; i++)
         {
             int index = i;
-            Set(quests[i], "questName", titles[i], "description", descriptions[i], "questType", (int)QuestType.MainStory, "creditReward", 50 + 25 * i, "icon", SpriteAt("UI_Icons/gear_galaxy_map_pin.png"));
+            Set(quests[i], "questName", titles[i], "description", descriptions[i], "questType", (int)QuestType.MainStory, "creditReward", 50 + 25 * i, "icon", ArtSprite("item_exotic"));
             SetArray(quests[i], "objectives", 1, (p, j) => {
                 p.FindPropertyRelative("type").enumValueIndex = (int)types[index];
                 p.FindPropertyRelative("targetId").stringValue = targets[index];
@@ -42,12 +42,12 @@ public static partial class CosmicHorizonProjectBuilder
         }
         for (int i = 0; i < 4; i++)
         {
-            int index = i; var biome = BiomeAssets()[i];
-            Color[] tints = { new Color(0.1f, 0.6f, 0.85f), new Color(0.35f, 0.15f, 0.65f), new Color(0.05f, 0.2f, 0.4f), new Color(0.2f, 0.05f, 0.3f) };
-            Set(biome, "waterTintColor", tints[i], "waterTintIntensity", 0.12f + i * 0.04f, "ambientLightIntensity", 0.9f - i * 0.15f);
-            string[] layers = { "skybox", "distant", "atmospheric", "midground", "foreground" };
-            SetArray(biome, "backgroundTiles", 5, (p, j) => p.objectReferenceValue = SpriteAt("Backgrounds/bg_parallax_" + layers[j] + "_" + (index * 4 + 1).ToString("00") + ".png"));
-            SetArray(biome, "environmentProps", 12, (p, j) => p.objectReferenceValue = SpriteAt("Environment/env_coral_" + (index * 12 + j + 1).ToString("000") + ".png"));
+            var biome = BiomeAssets()[i];
+            Color[] tints = { new Color(0.1f, 0.65f, 0.68f), new Color(0.7f, 0.43f, 0.29f), new Color(0.21f, 0.47f, 0.8f), new Color(0.85f, 0.27f, 0.22f) };
+            Set(biome, "waterTintColor", tints[i], "waterTintIntensity", i == 0 ? 0.07f : 0f, "ambientLightIntensity", 0.92f - i * 0.06f);
+            var backdrop = BackdropSprite(DestinationArt[i]);
+            SetArray(biome, "backgroundTiles", 5, (p, j) => p.objectReferenceValue = backdrop);
+            SetArray(biome, "environmentProps", 1, (p, j) => p.objectReferenceValue = ArtSprite("terrain_" + DestinationProps[i]));
         }
         foreach (UpgradeCategory category in Enum.GetValues(typeof(UpgradeCategory)))
         {
@@ -94,33 +94,33 @@ public static partial class CosmicHorizonProjectBuilder
     }
     private static void BuildScenePolish(Scene scene)
     {
-        if (scene.name == "SC_BossArena") return;
         var roots = scene.GetRootGameObjects();
+        if (scene.name == "SC_BossArena")
+        {
+            var arena = roots.First(go => go.GetComponent<BossArenaDirector>() != null);
+            BuildBackdrop(arena.transform, null, "arena", order: 10);
+            return;
+        }
         var camera = roots.First(go => go.GetComponent<Camera>() != null).GetComponent<Camera>();
         var oldFollow = camera.GetComponent<DiveSceneView>(); if (oldFollow != null) oldFollow.enabled = false;
         var follow = camera.GetComponent<CameraFollow>(); if (follow == null) follow = camera.gameObject.AddComponent<CameraFollow>(); WireChannels(follow);
         var shake = camera.GetComponent<CameraShake>(); if (shake == null) shake = camera.gameObject.AddComponent<CameraShake>(); WireChannels(shake);
         var player = roots.FirstOrDefault(go => go.GetComponent<PlayerController>() != null);
         if (player != null) Set(follow, "target", player.transform);
-        if (roots.Any(go => go.name == "BiomePresentation")) return;
-        int biomeIndex = scene.name.Contains("Twilight") ? 1 : scene.name.Contains("Abyssal") ? 2 : scene.name.Contains("EventHorizon") ? 3 : 0;
-        var biome = BiomeAssets()[biomeIndex];
-        var root = new GameObject("BiomePresentation"); var parallax = root.AddComponent<ParallaxController>();
-        Set(parallax, "cameraTransform", camera.transform, "automaticScroll", scene.name == "SC_MainMenu" ? 0.8f : 0f);
-        var tiles = new SpriteRenderer[15];
-        string[] layers = { "BG_Skybox", "BG_Distant", "BG_Atmospheric", "BG_Midground", "BG_Foreground" };
-        for (int i = 0; i < tiles.Length; i++)
+        int destination = DestinationIndex(scene.name);
+        bool expedition = destination >= 0 || scene.name == "SC_Tutorial";
+        int biomeIndex = Mathf.Max(0, destination);
+        string art = expedition ? DestinationArt[biomeIndex] : scene.name == "SC_NebulaCantina" ? "cantina" : "mothership";
+        var root = roots.FirstOrDefault(go => go.name == "BiomePresentation");
+        if (root == null) root = new GameObject("BiomePresentation");
+        var parallax = root.GetComponent<ParallaxController>();
+        if (parallax != null)
         {
-            var obj = new GameObject("Parallax_" + i, typeof(SpriteRenderer)); obj.transform.SetParent(root.transform, false);
-            var sprite = biome.BackgroundTiles[i / 3]; var renderer = obj.GetComponent<SpriteRenderer>();
-            renderer.sprite = sprite; renderer.sortingLayerName = layers[i / 3];
-            obj.transform.localScale = new Vector3(50f / sprite.bounds.size.x, 22f / sprite.bounds.size.y, 1);
-            tiles[i] = renderer;
+            DestroyGeneratedChildren(root.transform, "Parallax_");
+            DestroyGeneratedChildren(root.transform, "BiomeProp_");
+            UnityEngine.Object.DestroyImmediate(parallax);
         }
-        SetArray(parallax, "tiles", tiles.Length, (p, i) => p.objectReferenceValue = tiles[i]);
-        var zone = root.AddComponent<BiomeZone>(); WireChannels(zone);
-        SetArray(zone, "biomes", 4, (p, i) => p.objectReferenceValue = BiomeAssets()[i]);
-        SetArray(zone, "backgroundTiles", tiles.Length, (p, i) => p.objectReferenceValue = tiles[i]);
+        BuildBackdrop(root.transform, camera, art, expedition && biomeIndex == 0);
         var lighting = roots.Select(go => go.GetComponent<Light2D>()).FirstOrDefault(light => light != null);
         if (lighting == null)
         {
@@ -129,37 +129,72 @@ public static partial class CosmicHorizonProjectBuilder
         }
         var sorting = SortingLayer.layers;
         SetArray(lighting, "m_ApplyToSortingLayers", sorting.Length, (p, i) => p.intValue = sorting[i].id);
-        Set(zone, "ambient", lighting);
-        Vector3 origin = player != null ? player.transform.position : Vector3.zero;
-        for (int i = 0; i < 12; i++)
+        var zone = root.GetComponent<BiomeZone>();
+        if (!expedition)
         {
-            var prop = new GameObject("BiomeProp_" + i, typeof(SpriteRenderer)); prop.transform.SetParent(root.transform, false);
-            prop.transform.position = origin + new Vector3(-16 + i * 3, -4 - i % 3, 0);
-            prop.GetComponent<SpriteRenderer>().sprite = biome.EnvironmentProps[i]; prop.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Back";
-            prop.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
+            if (zone != null) UnityEngine.Object.DestroyImmediate(zone);
+            return;
         }
-        if (!scene.name.StartsWith("SC_DiveZone", StringComparison.Ordinal)) return;
-        for (int i = 0; i < 4; i++) BuildEnvironmentHazard(root.transform, origin + new Vector3(-9 + i * 6, -8, 0), (EnvironmentHazardType)i);
+        if (zone == null) zone = root.AddComponent<BiomeZone>();
+        WireChannels(zone);
+        var biomes = BiomeAssets();
+        SetArray(zone, "biomes", biomes.Length, (p, i) => p.objectReferenceValue = biomes[i]);
+        SetArray(zone, "backgroundTiles", 0, null);
+        Set(zone, "ambient", lighting);
+        Vector3 origin = player.transform.position;
+        for (int i = 0; i < 8; i++)
+        {
+            string name = "BiomeProp_" + i;
+            var prop = root.transform.Find(name)?.gameObject;
+            if (prop == null)
+            {
+                prop = new GameObject(name, typeof(SpriteRenderer));
+                prop.transform.SetParent(root.transform, false);
+            }
+            float scale = 1.1f + 0.4f * (i % 4);
+            prop.transform.localScale = new Vector3(i % 2 == 0 ? scale : -scale, scale, 1f);
+            prop.transform.position = origin + new Vector3(-11 + i * 7.5f, -4.9f + (biomeIndex == 0 ? -i * 0.7f : 0f), 0f);
+            var renderer = prop.GetComponent<SpriteRenderer>();
+            renderer.sprite = biomes[biomeIndex].EnvironmentProps[0];
+            renderer.sortingLayerName = "Environment_Back";
+            renderer.sharedMaterial = SpriteLitMaterial();
+        }
+        if (destination < 0) return;
+        for (int i = 0; i < 4; i++)
+        {
+            var type = (EnvironmentHazardType)i;
+            var position = origin + new Vector3(-9 + i * 6, -8, 0);
+            BuildEnvironmentHazard(root.transform, position, type);
+        }
+    }
+
+    private static void DestroyGeneratedChildren(Transform parent, string prefix)
+    {
+        foreach (var child in parent.Cast<Transform>().Where(t => t.name.StartsWith(prefix, StringComparison.Ordinal)).ToArray())
+            UnityEngine.Object.DestroyImmediate(child.gameObject);
     }
     private static void BuildEnvironmentHazard(Transform parent, Vector3 position, EnvironmentHazardType type)
     {
-        var obj = new GameObject(type.ToString(), typeof(SpriteRenderer), typeof(BoxCollider2D), typeof(EnvironmentHazard));
+        var obj = parent.Find(type.ToString())?.gameObject;
+        if (obj == null) obj = new GameObject(type.ToString(), typeof(SpriteRenderer), typeof(BoxCollider2D), typeof(EnvironmentHazard));
         obj.transform.SetParent(parent, false); obj.transform.position = position; obj.layer = type == EnvironmentHazardType.CrushingWall ? 9 : 12;
         obj.GetComponent<BoxCollider2D>().isTrigger = type != EnvironmentHazardType.CrushingWall;
         obj.GetComponent<BoxCollider2D>().size = type == EnvironmentHazardType.CrushingWall ? new Vector2(0.8f, 4f) : new Vector2(2f, 2f);
         obj.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Front";
         var hazard = obj.GetComponent<EnvironmentHazard>(); WireChannels(hazard); Set(hazard, "hazardType", (int)type);
-        string prefix = type == EnvironmentHazardType.PoisonCloud ? "hazard_toxic_spore_acid_pool_" : type == EnvironmentHazardType.LavaVent ? "hazard_volcanic_magma_geyser_" :
-            type == EnvironmentHazardType.ElectricField ? "hazard_cryo_ice_frost_spike_" : "hazard_gravity_vortex_rift_";
-        SetArray(hazard, "frames", 20, (p, i) => p.objectReferenceValue = SpriteAt("VFX/" + prefix + (i + 1).ToString("00") + ".png"));
+        string effect = type == EnvironmentHazardType.PoisonCloud ? "toxic" : type == EnvironmentHazardType.LavaVent ? "heat" : "shock";
+        SetArray(hazard, "frames", 4, (p, i) => p.objectReferenceValue = ArtSprite("fx_" + effect + "_" + i));
         if (type != EnvironmentHazardType.CrushingWall) return;
-        SetArray(hazard, "frames", 1, (p, i) => p.objectReferenceValue = SpriteAt("Environment/station_arch_010.png"));
+        SetArray(hazard, "frames", 1, (p, i) => p.objectReferenceValue = ArtSprite("terrain_scrap"));
         obj.GetComponent<SpriteRenderer>().drawMode = SpriteDrawMode.Sliced; obj.GetComponent<SpriteRenderer>().size = new Vector2(0.8f, 4f);
-        var body = obj.AddComponent<Rigidbody2D>(); body.bodyType = RigidbodyType2D.Kinematic; body.gravityScale = 0;
-        var fixedWall = new GameObject("CrushingBackstop", typeof(BoxCollider2D), typeof(SpriteRenderer)); fixedWall.transform.SetParent(parent, false);
+        var body = obj.GetComponent<Rigidbody2D>(); if (body == null) body = obj.AddComponent<Rigidbody2D>();
+        body.bodyType = RigidbodyType2D.Kinematic; body.gravityScale = 0;
+        var fixedWall = parent.Find("CrushingBackstop")?.gameObject;
+        if (fixedWall == null) fixedWall = new GameObject("CrushingBackstop", typeof(BoxCollider2D), typeof(SpriteRenderer));
+        fixedWall.transform.SetParent(parent, false);
         fixedWall.transform.position = position + Vector3.right * 2.4f; fixedWall.layer = 9;
         fixedWall.GetComponent<BoxCollider2D>().size = new Vector2(0.8f, 4f);
-        fixedWall.GetComponent<SpriteRenderer>().sprite = SpriteAt("Environment/station_arch_010.png");
+        fixedWall.GetComponent<SpriteRenderer>().sprite = ArtSprite("terrain_scrap");
         fixedWall.GetComponent<SpriteRenderer>().drawMode = SpriteDrawMode.Sliced; fixedWall.GetComponent<SpriteRenderer>().size = new Vector2(0.8f, 4f);
         fixedWall.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Front";
     }

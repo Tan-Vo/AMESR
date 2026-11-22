@@ -26,7 +26,7 @@ public static partial class CosmicHorizonProjectBuilder
         var collider = player.AddComponent<CapsuleCollider2D>();
         collider.size = new Vector2(0.5f, 0.85f);
         var sprite = player.AddComponent<SpriteRenderer>();
-        sprite.sprite = SpriteAt("Characters/Player/Idle/player_idle_01.png");
+        sprite.sprite = ArtSprite("pilot_idle");
         sprite.sortingLayerName = "Player";
         sprite.sharedMaterial = SpriteLitMaterial();
         var animator = player.AddComponent<Animator>();
@@ -41,7 +41,7 @@ public static partial class CosmicHorizonProjectBuilder
         ground.SetParent(player.transform, false);
         ground.localPosition = new Vector3(0, -0.44f, 0);
         Set(controller, "groundCheck", ground, "groundLayer", (1 << 9) | (1 << 10), "animator", animator, "spriteRenderer", sprite);
-        SetArray(controller, "lowOxygenFrames", 4, (p, i) => p.objectReferenceValue = SpriteAt("Characters/player_anim_low_o2_panic_" + (i + 1).ToString("00") + ".png"));
+        SetArray(controller, "lowOxygenFrames", 2, (p, i) => p.objectReferenceValue = ArtSprite(i == 0 ? "pilot_land" : "pilot_jump"));
         var jetpack = player.AddComponent<JetpackSystem>();
         WireChannels(jetpack);
         var thrusterObject = new GameObject("Thruster", typeof(ParticleSystem));
@@ -58,7 +58,7 @@ public static partial class CosmicHorizonProjectBuilder
         var texture = particles.textureSheetAnimation;
         texture.enabled = true;
         texture.mode = ParticleSystemAnimationMode.Sprites;
-        texture.AddSprite(SpriteAt("Characters/Planetary_Actions/pioneer_06_sprint_thruster.png"));
+        for (int i = 0; i < 4; i++) texture.AddSprite(ArtSprite("fx_thruster_" + i));
         Set(jetpack, "thrusterParticles", particles);
         WireChannels(player.AddComponent<OxygenSystem>());
         WireChannels(player.AddComponent<WaterSurfaceTransition>());
@@ -105,18 +105,18 @@ public static partial class CosmicHorizonProjectBuilder
         foreach (string parameter in new[] { "Attack", "Hurt", "Die" }) controller.AddParameter(parameter, AnimatorControllerParameterType.Trigger);
         string[] names = { "Idle", "Walk", "Run", "Jump", "Swim", "Hurt", "Dead", "HarpoonAim", "Mining", "Shoot", "Slash", "Waiter" };
         string[][] paths = {
-            Frames("Characters/Player/Idle/player_idle_", 10),
-            Frames("Characters/Player/Walk/player_walk_", 8),
-            Frames("Characters/Player/Run/player_run_", 8),
-            Frames("Characters/Player/Jump/player_jump_", 12),
-            Frames("Characters/player_anim_swim_thrust_", 6),
-            new[] { "Characters/Player/Actions/player_action_hurt_01_impact.png", "Characters/Player/Actions/player_action_hurt_02_recover.png" },
-            new[] { "Characters/Player/Actions/player_action_hurt_01_impact.png" },
-            Frames("Characters/player_anim_harpoon_aim_", 6),
-            new[] { "Characters/Player/Actions/player_action_mine_drill_active.png" },
-            new[] { "Characters/Player/Actions/player_action_shoot_01_aim.png", "Characters/Player/Actions/player_action_shoot_02_fire.png", "Characters/Player/Actions/player_action_shoot_03_recoil.png" },
-            new[] { "Characters/Player/Actions/player_action_slash_01_windup.png", "Characters/Player/Actions/player_action_slash_02_strike.png", "Characters/Player/Actions/player_action_slash_03_recover.png" },
-            Frames("Characters/player_anim_waiter_mode_", 7)
+            new[] { "idle", "idle_breath" },
+            new[] { "stride_left", "idle", "stride_right", "idle" },
+            new[] { "run", "stride_left", "run", "stride_right" },
+            new[] { "jump" },
+            new[] { "swim", "swim_glide", "swim" },
+            new[] { "land", "idle" },
+            new[] { "land" },
+            new[] { "aim" },
+            new[] { "mine", "mine_work", "mine" },
+            new[] { "aim", "aim_kick", "aim" },
+            new[] { "aim", "run", "land" },
+            new[] { "stride_left", "idle", "stride_right", "idle" }
         };
         for (int i = 0; i < names.Length; i++)
         {
@@ -125,7 +125,9 @@ public static partial class CosmicHorizonProjectBuilder
             if (clip == null) { clip = new AnimationClip(); AssetDatabase.CreateAsset(clip, clipPath); }
             clip.frameRate = 12f;
             var keys = new ObjectReferenceKeyframe[paths[i].Length + 1];
-            for (int frame = 0; frame < keys.Length; frame++) keys[frame] = new ObjectReferenceKeyframe { time = frame / 12f, value = SpriteAt(paths[i][Mathf.Min(frame, paths[i].Length - 1)]) };
+            float interval = i == 0 ? 0.45f : 0.12f;
+            for (int frame = 0; frame < keys.Length; frame++)
+                keys[frame] = new ObjectReferenceKeyframe { time = frame * interval, value = ArtSprite("pilot_" + paths[i][Mathf.Min(frame, paths[i].Length - 1)]) };
             AnimationUtility.SetObjectReferenceCurve(clip, EditorCurveBinding.PPtrCurve("", typeof(SpriteRenderer), "m_Sprite"), keys);
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
             settings.loopTime = i < 3 || i == 4 || i == 7 || i == 8 || i == 11;
@@ -161,16 +163,25 @@ public static partial class CosmicHorizonProjectBuilder
         EditorUtility.SetDirty(controller);
         return controller;
     }
-    private static string[] Frames(string prefix, int count) => Enumerable.Range(1, count).Select(i => prefix + i.ToString("00") + ".png").ToArray();
     private static void BuildDiveScene(Scene scene, GameObject prefab, int biomeIndex)
     {
         EnsureScenePrefab<PlayerController>(scene, prefab);
         var player = scene.GetRootGameObjects().First(root => root.GetComponent<PlayerController>() != null);
         float[] spawnY = { 1f, -275f, -775f, -1275f };
         player.transform.position = new Vector3(0, spawnY[biomeIndex], 0);
-        if (!scene.GetRootGameObjects().Any(root => root.name == "WaterVolume"))
+        bool wet = biomeIndex == 0;
+        Set(player.GetComponent<PlayerController>(), "spaceFlight", !wet);
+        var water = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "WaterVolume");
+        var dock = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "SurfaceDock");
+        if (!wet)
         {
-            var water = new GameObject("WaterVolume", typeof(BoxCollider2D));
+            if (water != null) Object.DestroyImmediate(water);
+            if (dock != null) Object.DestroyImmediate(dock);
+            BuildExpeditionTerrain(scene, player.transform.position, biomeIndex);
+        }
+        else if (water == null)
+        {
+            water = new GameObject("WaterVolume", typeof(BoxCollider2D));
             water.tag = "WaterSurface";
             water.layer = 4;
             water.transform.position = new Vector3(0, -2500, 0);
@@ -178,28 +189,61 @@ public static partial class CosmicHorizonProjectBuilder
             collider.isTrigger = true;
             collider.size = new Vector2(10000, 5000);
         }
-        if (!scene.GetRootGameObjects().Any(root => root.name == "SurfaceDock"))
+        if (wet)
         {
-            var dock = new GameObject("SurfaceDock", typeof(SpriteRenderer), typeof(BoxCollider2D));
+            if (dock == null) dock = new GameObject("SurfaceDock", typeof(SpriteRenderer), typeof(BoxCollider2D));
             dock.layer = 9;
             dock.transform.position = new Vector3(-2, -0.5f, 0);
-            dock.transform.localScale = new Vector3(6, 1, 1);
-            dock.GetComponent<BoxCollider2D>().size = Vector2.one;
-            dock.GetComponent<SpriteRenderer>().sprite = SpriteAt("Tilesets/tile_008.png");
-            dock.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
+            ConfigurePlatform(dock, ArtSprite("terrain_deck"), new Vector2(6, 1));
         }
         var camera = scene.GetRootGameObjects().First(root => root.GetComponent<Camera>() != null);
         var view = camera.GetComponent<DiveSceneView>();
         if (view == null) view = camera.AddComponent<DiveSceneView>();
         Set(view, "target", player.transform);
         camera.transform.position = player.transform.position + Vector3.back * 10f;
-        BuildDiveAtmosphere(camera.transform, biomeIndex);
+        var legacyAtmosphere = camera.transform.Find("DiveAtmosphere");
+        if (wet)
+            BuildDiveAtmosphere(camera.transform);
+        else if (legacyAtmosphere != null)
+            Object.DestroyImmediate(legacyAtmosphere.gameObject);
     }
 
-    private static void BuildDiveAtmosphere(Transform camera, int biomeIndex)
+    private static void BuildExpeditionTerrain(Scene scene, Vector3 origin, int biomeIndex)
+    {
+        var terrain = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "ExpeditionTerrain");
+        if (terrain == null) terrain = new GameObject("ExpeditionTerrain");
+        var sprite = ArtSprite(biomeIndex == 1 ? "terrain_regolith" : biomeIndex == 2 ? "terrain_basalt" : "terrain_wreck");
+        for (int i = 0; i < 8; i++)
+        {
+            string name = "Ledge_" + i;
+            var ledge = terrain.transform.Find(name)?.gameObject;
+            if (ledge == null)
+            {
+                ledge = new GameObject(name, typeof(SpriteRenderer), typeof(BoxCollider2D));
+                ledge.transform.SetParent(terrain.transform, false);
+            }
+            ledge.layer = 9;
+            ledge.transform.position = origin + new Vector3(-12f + i * 8f, -5f - Mathf.Abs(i - 2) * 0.4f, 0f);
+            ConfigurePlatform(ledge, sprite, new Vector2(7f, 1.1f));
+        }
+    }
+
+    private static void ConfigurePlatform(GameObject platform, Sprite sprite, Vector2 size)
+    {
+        var spriteSize = new Vector2(size.x, sprite.bounds.size.y);
+        platform.transform.localScale = new Vector3(1f, size.y / spriteSize.y, 1f);
+        var renderer = platform.GetComponent<SpriteRenderer>();
+        renderer.sprite = sprite;
+        renderer.sharedMaterial = SpriteLitMaterial();
+        renderer.drawMode = SpriteDrawMode.Tiled;
+        renderer.size = spriteSize;
+        platform.GetComponent<BoxCollider2D>().size = spriteSize;
+    }
+
+    private static void BuildDiveAtmosphere(Transform camera)
     {
         Folder("Assets/Materials");
-        string path = $"Assets/Materials/M_DiveAtmosphere_{biomeIndex}.mat";
+        const string path = "Assets/Materials/M_DiveAtmosphere_0.mat";
         var material = AssetDatabase.LoadAssetAtPath<Material>(path);
         if (material == null)
         {
@@ -207,7 +251,7 @@ public static partial class CosmicHorizonProjectBuilder
             material = new Material(shader);
             AssetDatabase.CreateAsset(material, path);
         }
-        material.SetColor("_WaterTint", BiomeAssets()[biomeIndex].WaterTintColor);
+        material.SetColor("_WaterTint", BiomeAssets()[0].WaterTintColor);
         EditorUtility.SetDirty(material);
 
         const string name = "DiveAtmosphere";

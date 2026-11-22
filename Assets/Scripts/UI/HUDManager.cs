@@ -8,6 +8,9 @@ public sealed class HUDManager : MonoBehaviour
     [SerializeField] private SO_FloatEvent onHPChanged, onOxygenChanged, onFuelChanged, onDepthChanged;
     [SerializeField] private SO_WeaponHUDEvent onWeaponHUDChanged;
     [SerializeField] private SO_BiomeData[] biomes;
+    [SerializeField] private string locationName;
+    [SerializeField] private bool showRange = true;
+    [SerializeField] private bool showDepth = true;
     [SerializeField] private Image healthFill, oxygenFill, fuelFill, weaponIcon;
     [SerializeField] private Image depthFill;
     [SerializeField] private Text healthLabel, oxygenLabel, fuelLabel, depthLabel, creditsLabel, weaponLabel, quickLabel;
@@ -39,14 +42,18 @@ public sealed class HUDManager : MonoBehaviour
     }
     private void LateUpdate()
     {
+        weaponIcon.enabled = weaponIcon.sprite != null;
         healthFill.fillAmount = hp; oxygenFill.fillAmount = oxygen; fuelFill.fillAmount = fuel;
         oxygenFill.color = oxygen < 0.2f ? Color.Lerp(Color.red, Color.white, (Mathf.Sin(Time.unscaledTime * 8f) + 1) * 0.5f) : Color.cyan;
         healthLabel.text = "HP " + Mathf.CeilToInt(hp * 100) + "/100"; oxygenLabel.text = "O₂ " + Mathf.CeilToInt(oxygen * 100) + "%"; fuelLabel.text = "FUEL " + Mathf.CeilToInt(fuel * 100) + "%";
         string biomeName = "Surface";
         foreach (var biome in biomes) if (depth >= biome.DepthMin && depth < biome.DepthMax) { biomeName = biome.BiomeName; depthLabel.color = biome.WaterTintColor * 2f; break; }
-        depthLabel.text = depth.ToString("0") + "m • " + biomeName + "\nDAY " + session.Data.CurrentDay;
+        string location = string.IsNullOrEmpty(locationName) ? biomeName : locationName;
+        if (!string.IsNullOrEmpty(locationName)) depthLabel.color = new Color(0.82f, 0.92f, 1f);
+        string reading = showRange ? (showDepth ? "DEPTH " : "RANGE ") + depth.ToString("0") + " m\n" : "";
+        depthLabel.text = location.ToUpperInvariant() + "\n" + reading + "DAY " + session.Data.CurrentDay;
         creditsLabel.text = "₡ " + session.Data.Credits.ToString("N0");
         quickLabel.text = "I: cargo • F1–F5: consumables • Esc: pause";
-        depthFill.fillAmount = Mathf.Clamp01(depth / 3000f); depthFill.color = depthLabel.color;
+        depthFill.fillAmount = showRange ? Mathf.Clamp01(depth / 3000f) : 0f; depthFill.color = depthLabel.color;
     }
 }

@@ -39,7 +39,7 @@ public sealed class PlayerController : MonoBehaviour
     private bool running;
     private bool grounded;
     private bool wasGrounded;
-    private bool waterDirty;
+    private bool movementModeDirty;
     private bool rescuePending;
     private float rescueY;
     private float normalGravity;
@@ -50,6 +50,8 @@ public sealed class PlayerController : MonoBehaviour
     private float slowRemaining;
     private float slowScale = 1f;
     public bool IsUnderwater { get; private set; }
+    [SerializeField] private bool spaceFlight;
+    public bool RequiresAir => IsUnderwater || spaceFlight;
     public bool IsGrounded => grounded;
     private void OnEnable() { onPlayerEffectRequested?.RegisterListener(ApplyEffect); }
     private void OnDisable() { onPlayerEffectRequested?.UnregisterListener(ApplyEffect); }
@@ -72,6 +74,7 @@ public sealed class PlayerController : MonoBehaviour
         if (animator == null) animator = GetComponent<Animator>();
         if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
         normalGravity = rb.gravityScale;
+        movementModeDirty = spaceFlight;
     }
     private void Update()
     {
@@ -100,14 +103,14 @@ public sealed class PlayerController : MonoBehaviour
             rb.position = new Vector2(rb.position.x, rescueY);
             rb.linearVelocity = Vector2.zero;
         }
-        if (waterDirty)
+        if (movementModeDirty)
         {
-            waterDirty = false;
-            rb.gravityScale = IsUnderwater ? 0f : normalGravity;
-            rb.linearDamping = IsUnderwater ? 2f : 0f;
+            movementModeDirty = false;
+            rb.gravityScale = RequiresAir ? 0f : normalGravity;
+            rb.linearDamping = RequiresAir ? 2f : 0f;
         }
         wasGrounded = grounded;
-        grounded = !IsUnderwater && Physics2D.OverlapBox(groundCheck != null ? groundCheck.position : transform.position + Vector3.down * 0.45f, groundCheckSize, 0f, groundLayer) != null;
+        grounded = !RequiresAir && Physics2D.OverlapBox(groundCheck != null ? groundCheck.position : transform.position + Vector3.down * 0.45f, groundCheckSize, 0f, groundLayer) != null;
         if (grounded) coyoteTimeCounter = coyoteTimeDuration;
         else coyoteTimeCounter = Mathf.Max(0f, coyoteTimeCounter - Time.fixedDeltaTime);
         if (stats.IsDead() || stateMachine.MovementLocked || stateMachine.CurrentState == PlayerState.GrappleSwinging)
@@ -118,7 +121,7 @@ public sealed class PlayerController : MonoBehaviour
             ApplyDrift();
             return;
         }
-        if (IsUnderwater)
+        if (RequiresAir)
         {
             Vector2 target = Vector2.ClampMagnitude(moveInput, 1f) * swimSpeed * motionScale;
             if (jetpack != null && jetpack.IsJetpacking) target.y = Mathf.Max(target.y, rb.linearVelocity.y);
@@ -160,6 +163,7 @@ public sealed class PlayerController : MonoBehaviour
         PlayerState next;
         if (jetpack != null && jetpack.IsJetpacking) next = PlayerState.Jetpacking;
         else if (IsUnderwater) next = moveInput.y < -0.1f ? PlayerState.Diving : PlayerState.Swimming;
+        else if (spaceFlight) next = PlayerState.Flying;
         else if (!grounded) next = rb.linearVelocity.y > 0f ? PlayerState.Jumping : PlayerState.Falling;
         else next = Mathf.Abs(moveInput.x) > 0.01f ? running ? PlayerState.Running : PlayerState.Walking : PlayerState.Idle;
         stateMachine.ChangeState(next);
@@ -183,7 +187,7 @@ public sealed class PlayerController : MonoBehaviour
             animator.SetBool(AnimatorHashes.IsHarpooning, stateMachine.CurrentState == PlayerState.HarpoonAiming || stateMachine.CurrentState == PlayerState.HarpoonReeling);
             animator.SetBool(AnimatorHashes.IsWaitering, stateMachine.CurrentState >= PlayerState.Waiter_Idle && stateMachine.CurrentState <= PlayerState.Waiter_Serving);
         }
-        if (spriteRenderer != null && IsUnderwater && stats.IsLowOxygen() && !stats.IsDead() &&
+        if (spriteRenderer != null && RequiresAir && stats.IsLowOxygen() && !stats.IsDead() &&
             stateMachine.CurrentState != PlayerState.Hurt && lowOxygenFrames != null && lowOxygenFrames.Length > 0)
             spriteRenderer.sprite = lowOxygenFrames[(int)(Time.time * 8f) % lowOxygenFrames.Length];
     }
@@ -192,8 +196,8 @@ public sealed class PlayerController : MonoBehaviour
     {
         IsUnderwater = underwater;
         stateMachine.InWater = underwater;
-        waterDirty = true;
-        if (stateMachine.IsLocomotion) stateMachine.ChangeState(underwater ? PlayerState.Swimming : PlayerState.Falling);
+        movementModeDirty = true;
+        if (stateMachine.IsLocomotion) stateMachine.ChangeState(underwater ? PlayerState.Swimming : spaceFlight ? PlayerState.Flying : PlayerState.Falling);
     }
     /// <summary>Requests an emergency teleport above the water surface.</summary>
     public void RequestSurface(float y)

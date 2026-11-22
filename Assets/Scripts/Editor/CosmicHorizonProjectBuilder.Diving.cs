@@ -48,7 +48,7 @@ public static partial class CosmicHorizonProjectBuilder
         rect.anchoredPosition = position;
         rect.sizeDelta = radial ? new Vector2(64, 64) : new Vector2(250, 36);
         var image = obj.GetComponent<Image>();
-        image.sprite = SpriteAt("Items/crystal_quantum_biolum_gem_01.png");
+        image.sprite = ArtSprite("item_crystal");
         image.type = Image.Type.Filled;
         image.fillMethod = radial ? Image.FillMethod.Radial360 : Image.FillMethod.Horizontal;
         image.raycastTarget = false;
@@ -63,7 +63,7 @@ public static partial class CosmicHorizonProjectBuilder
         WireChannels(tip.GetComponent<HarpoonProjectile>());
         tip.tag = "Harpoon";
         tip.layer = 8;
-        tip.GetComponent<SpriteRenderer>().sprite = SpriteAt("Weapons/harpoon_tip_basic_gravity.png");
+        tip.GetComponent<SpriteRenderer>().sprite = ArtSprite("item_harpoon");
         tip.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
         tip.GetComponent<SpriteRenderer>().sortingLayerName = "Weapons_FX";
         var prefab = PrefabUtility.SaveAsPrefabAsset(tip, "Assets/Prefabs/Diving/PF_Harpoon.prefab");
@@ -103,7 +103,7 @@ public static partial class CosmicHorizonProjectBuilder
         Folder("Assets/Prefabs/Diving");
         var ore = new GameObject("OreNode", typeof(SpriteRenderer), typeof(OreNode));
         ore.layer = 11;
-        ore.GetComponent<SpriteRenderer>().sprite = SpriteAt("Items/crystal_quantum_biolum_gem_01.png");
+        ore.GetComponent<SpriteRenderer>().sprite = ArtSprite("item_ore");
         ore.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
         ore.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Front";
         var node = ore.GetComponent<OreNode>();
@@ -115,7 +115,7 @@ public static partial class CosmicHorizonProjectBuilder
         anchor.tag = "GrapplePoint";
         anchor.GetComponent<CircleCollider2D>().radius = 0.65f;
         anchor.GetComponent<CircleCollider2D>().isTrigger = true;
-        anchor.GetComponent<SpriteRenderer>().sprite = SpriteAt("Tilesets/tile_008.png");
+        anchor.GetComponent<SpriteRenderer>().sprite = ArtSprite("terrain_anchor");
         anchor.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
         anchor.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Front";
         PrefabUtility.SaveAsPrefabAsset(anchor, "Assets/Prefabs/Diving/PF_GrapplePoint.prefab");

@@ -1,13 +1,15 @@
 # Cosmic Horizon (AMESR)
 
-Unity 6 / URP 2D action-diving and cantina-management vertical slice.
+Unity 6 / URP 2D space exploration, action diving, and cantina management vertical slice.
 
 ## Run
 
 1. Open the project in **Unity 6000.5.7f1**, with an activated Unity license.
 2. Run **Cosmic Horizon → Build Vertical Slice** once. This authors ScriptableObjects, animation controller/clips, prefabs, canvases, nine scenes, and Build Settings entries from existing sprites.
 3. Open **Assets/Scenes/SC_MainMenu.unity** and press **Play**.
-4. Choose **New Game**. Mothership buttons lead to the tutorial, four dive zones, cantina, workshop, and bed. Catch ingredients before opening service. Complete service, continue to the workshop, then sleep to advance/save the day.
+4. Choose **New Game**. The Mothership terminal links to the training dock, four expeditions, and the cantina. Collect ingredients before opening service. Complete service, continue to the workshop, then sleep to advance and save the day.
+
+Swim in the Pelagic Moon's ocean. Use suit flight over Twilight Crater, through the crystal caverns of Prism Hollow, and around the Event Horizon Wreck. Both swimming and vacuum flight consume oxygen. An exhausted suit calls for rescue back to the Mothership.
 
 The builder preserves generated asset GUIDs but regenerates prefab content. Make custom prefab edits after building, or incorporate them into the builder before rebuilding.
 
@@ -19,7 +21,7 @@ Uncollected boss rewards remain in the saved reward ledger. Free cargo slots and
 
 | Input | Action |
 | --- | --- |
-| WASD / arrow keys | Move; swim in all directions underwater |
+| WASD / arrow keys | Walk on deck, swim underwater, or fly in any direction in vacuum |
 | Space | Jump; release early for a shorter jump |
 | Left Shift | Jetpack boost / grounded run modifier; consumes fuel and can overheat |
 | Mouse | Aim |
@@ -83,14 +85,14 @@ The compiler covers runtime **and Editor** C# using Unity's bundled Roslyn witho
 | Portrait/typewriter dialogue | **I/B** — five portrait conversation assets; hub crew conversation |
 | Ten quest definitions | **B/I** — ten authored quests; event-driven progress, saved completion/rewards |
 | Ten tutorial steps | **I/B** — movement through first service; saved step |
-| Five-layer parallax per biome | **I/B** — three prebuilt copies per layer; infinite horizontal recycling |
+| Destination backgrounds | **I/B** — illustrated backdrops with camera parallax and separate world-space scenery |
 | Camera dead zone/look-ahead/trauma | **I** — follow baseline, state zoom, quadratic trauma |
-| Gravity ↔ zero-g water transition | **I** — WaterSurfaceTransition |
+| Swimming and vacuum flight | **I** — WaterSurfaceTransition handles the ocean boundary, and dry destinations start in suit flight |
 | JSON save/load | **I** — SaveLoadManager; validation tested, Unity JSON/file integration unverified |
 | Main menu and pause menu | **I/B** — New/Continue, settings, save/load, navigation, pause time scale |
 | Nine scenes created and linked | **B** — authored/linked; actual generation and traversal unverified |
 | Pool all runtime-spawned entities | **V/I** — source audit finds Instantiate only in initialization-time ObjectPool.Prewarm; runtime/profiler validation unavailable |
-| Utilize all 4,249+ sprites; no placeholders | **N** — selected existing art is referenced; many alternate frames, unused variants, sheets, and unrelated assets remain unused. No replacement artwork was invented. Literal utilization of every sprite is not implemented. |
+| Utilize all 4,249+ sprites | **N** — the generated vertical slice uses a new destination art library. The repository retains the legacy art. |
 
 ### Acceptance still required
 
