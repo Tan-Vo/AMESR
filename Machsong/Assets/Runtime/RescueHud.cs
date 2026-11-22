@@ -113,7 +113,7 @@ namespace MachSong
                     case RescuePhase.Recover:
                         SetObjective("Đưa khoang về bến",run.Route == RescueRoute.UpperBridge
                             ? "GORDO  /  Cầu trên còn nguyên. Kéo khoang qua cửa trên rồi vào vòng sáng ở bến."
-                            : "GORDO  /  Hạ khoang ngang đèn xanh, kéo qua ống dưới rồi bay lên bến.",
+                            : "GORDO  /  Kéo khoang qua giữa ống dưới rồi bay lên bến.",
                             run.Tethered ? "BẾN CỨU HỘ" : "KHOANG");
                         break;
                 }
