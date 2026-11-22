@@ -112,10 +112,10 @@ public static partial class CosmicHorizonProjectBuilder
         var dialogue = Ensure<SO_DialogueLine>("Data/SO_Welcome");
         Set(dialogue, "speakerName", "Tan", "portrait", ArtSprite("crew_tan"));
         SetArray(dialogue, "lines", 1, (p, i) => p.stringValue = "Welcome to the Cosmic Horizon.");
+        BuildEcosystemData();
         var quest = Ensure<SO_QuestData>("Data/SO_FirstCatch");
         Set(quest, "questName", "First Catch", "description", "Catch three creatures.", "creditReward", 100, "icon", creatures[0].Icon);
         SetArray(quest, "objectives", 1, (p, i) => { p.FindPropertyRelative("requiredAmount").intValue = 3; p.FindPropertyRelative("description").stringValue = "Catch any three creatures."; });
-        BuildEcosystemData();
         BuildCantinaData();
         BuildBossData();
         BuildPolishData();
