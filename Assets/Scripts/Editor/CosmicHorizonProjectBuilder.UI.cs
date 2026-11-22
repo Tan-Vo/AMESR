@@ -109,22 +109,9 @@ public static partial class CosmicHorizonProjectBuilder
             StyleExpeditionHUD(root, expedition);
         }
         if (scene.name == "SC_BossArena") StyleBossHealth(root);
-        else if (scene.name != "SC_MainMenu") StyleSceneVignette(root);
         foreach (var component in root.GetComponentsInChildren<Component>(true))
             if (component is Graphic or Button or RectTransform)
                 RecordUIOverride(component);
-    }
-
-    private static void StyleSceneVignette(Transform root)
-    {
-        var vignette = PresentationImage(root, "SceneVignette", Vector2.zero, Vector2.zero);
-        vignette.sprite = ArtSprite("ui_vignette");
-        vignette.color = new Color(0.015f, 0.025f, 0.055f);
-        var rect = vignette.rectTransform;
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = rect.offsetMax = Vector2.zero;
-        vignette.transform.SetAsFirstSibling();
     }
 
     private static void StyleExpeditionHUD(Transform root, bool expedition)

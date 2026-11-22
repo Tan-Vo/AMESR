@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -43,9 +44,9 @@ public static partial class CosmicHorizonProjectBuilder
         for (int i = 0; i < 4; i++)
         {
             var biome = BiomeAssets()[i];
-            Color[] tints = { new Color(0.1f, 0.65f, 0.68f), new Color(0.7f, 0.43f, 0.29f), new Color(0.21f, 0.47f, 0.8f), new Color(0.85f, 0.27f, 0.22f) };
-            Set(biome, "waterTintColor", tints[i], "waterTintIntensity", i == 0 ? 0.07f : 0f, "ambientLightIntensity", 0.92f - i * 0.06f);
-            var backdrop = BackdropSprite(DestinationArt[i]);
+            var palette = StoryPalette.Dive(i);
+            Set(biome, "waterTintColor", palette.Water, "waterTintIntensity", palette.WaterOpacity, "ambientLightIntensity", palette.Ambient);
+            var backdrop = BackdropSprite(palette.Backdrop);
             SetArray(biome, "backgroundTiles", 5, (p, j) => p.objectReferenceValue = backdrop);
             SetArray(biome, "environmentProps", 1, (p, j) => p.objectReferenceValue = ArtSprite("terrain_" + DestinationProps[i]));
         }
@@ -101,23 +102,20 @@ public static partial class CosmicHorizonProjectBuilder
             BuildBackdrop(arena.transform, null, "arena", order: 10);
             return;
         }
+        if (!(StoryPalette.ForScene(scene.name) is StoryPalette palette)) return;
         var camera = roots.First(go => go.GetComponent<Camera>() != null).GetComponent<Camera>();
+        var legacyBackdrop = camera.transform.Find("StoryBackdrop");
+        if (legacyBackdrop != null) UnityEngine.Object.DestroyImmediate(legacyBackdrop.gameObject);
         var oldFollow = camera.GetComponent<DiveSceneView>(); if (oldFollow != null) oldFollow.enabled = false;
         var follow = camera.GetComponent<CameraFollow>(); if (follow == null) follow = camera.gameObject.AddComponent<CameraFollow>(); WireChannels(follow);
         var shake = camera.GetComponent<CameraShake>(); if (shake == null) shake = camera.gameObject.AddComponent<CameraShake>(); WireChannels(shake);
         var player = roots.FirstOrDefault(go => go.GetComponent<PlayerController>() != null);
         if (player != null) Set(follow, "target", player.transform);
         int destination = DestinationIndex(scene.name);
-        bool expedition = destination >= 0 || scene.name == "SC_Tutorial";
-        int biomeIndex = Mathf.Max(0, destination);
+        int biomeIndex = palette.Biome;
+        bool expedition = biomeIndex >= 0;
         Set(follow, "explorationZoom", expedition ? 5.9f : 7f, "swimmingZoom", 5.4f,
             "offset", new Vector2(0f, biomeIndex > 0 ? 0.35f : 1f));
-        string art = expedition ? DestinationArt[biomeIndex] : scene.name switch
-        {
-            "SC_MainMenu" => "title",
-            "SC_NebulaCantina" => "cantina",
-            _ => "mothership"
-        };
         var root = roots.FirstOrDefault(go => go.name == "BiomePresentation");
         if (root == null) root = new GameObject("BiomePresentation");
         var parallax = root.GetComponent<ParallaxController>();
@@ -127,19 +125,24 @@ public static partial class CosmicHorizonProjectBuilder
             DestroyGeneratedChildren(root.transform, "BiomeProp_");
             UnityEngine.Object.DestroyImmediate(parallax);
         }
-        BuildBackdrop(root.transform, camera, art, expedition && biomeIndex == 0);
+        BuildBackdrop(root.transform, camera, palette.Backdrop, biomeIndex == 0);
+        ApplySceneGrade(camera, root, scene.name, palette);
         var lighting = roots.Select(go => go.GetComponent<Light2D>()).FirstOrDefault(light => light != null);
         if (lighting == null)
-        {
             lighting = new GameObject("GlobalLight2D", typeof(Light2D)).GetComponent<Light2D>();
-            lighting.lightType = Light2D.LightType.Global;
-        }
-        var sorting = SortingLayer.layers;
-        SetArray(lighting, "m_ApplyToSortingLayers", sorting.Length, (p, i) => p.intValue = sorting[i].id);
+        lighting.lightType = Light2D.LightType.Global;
+        lighting.color = Color.Lerp(Color.white, palette.Accent, expedition ? .06f : .18f);
+        lighting.intensity = palette.Ambient;
+        TargetSortingLayers(lighting, SortingLayer.layers);
         var zone = root.GetComponent<BiomeZone>();
         if (!expedition)
         {
             if (zone != null) UnityEngine.Object.DestroyImmediate(zone);
+            if (scene.name == "SC_NebulaCantina")
+            {
+                StoryLight(root.transform, "CounterGlow", new Vector2(0f, 2f), palette.Accent, .38f, 6f, "Default", "Environment_Back", "Player");
+                StoryLight(root.transform, "BoothGlow", new Vector2(-6f, 1.5f), new Color(1f, .74f, .39f), .24f, 5f, "Default", "Environment_Back", "Player");
+            }
             return;
         }
         if (zone == null) zone = root.AddComponent<BiomeZone>();
@@ -148,6 +151,7 @@ public static partial class CosmicHorizonProjectBuilder
         SetArray(zone, "biomes", biomes.Length, (p, i) => p.objectReferenceValue = biomes[i]);
         SetArray(zone, "backgroundTiles", 0, null);
         Set(zone, "ambient", lighting);
+        StoryLight(player.transform, "SuitGlow", new Vector2(0f, .3f), palette.Accent, .25f, 3.5f, "Player", "Creatures_Front", "Environment_Front");
         Vector3 origin = player.transform.position;
         for (int i = 0; i < 8; i++)
         {
@@ -173,6 +177,74 @@ public static partial class CosmicHorizonProjectBuilder
             var position = origin + new Vector3(-9 + i * 6, -8, 0);
             BuildEnvironmentHazard(root.transform, position, type);
         }
+    }
+
+    private static void ApplySceneGrade(Camera camera, GameObject presentation, string sceneName, StoryPalette palette)
+    {
+        camera.clearFlags = CameraClearFlags.SolidColor;
+        camera.backgroundColor = palette.Sky;
+        camera.allowHDR = true;
+        var cameraData = camera.GetUniversalAdditionalCameraData();
+        cameraData.renderPostProcessing = true;
+        cameraData.volumeLayerMask |= 1 << presentation.layer;
+        var volume = presentation.GetComponent<Volume>();
+        if (volume == null) volume = presentation.AddComponent<Volume>();
+        volume.sharedProfile = BuildSceneProfile(sceneName, palette);
+        volume.isGlobal = true;
+        volume.priority = 1f;
+    }
+
+    private static void TargetSortingLayers(Light2D light, SortingLayer[] layers) =>
+        SetArray(light, "m_ApplyToSortingLayers", layers.Length, (p, i) => p.intValue = layers[i].id);
+
+    private static void StoryLight(Transform parent, string name, Vector2 position, Color color, float intensity, float radius, params string[] layerNames)
+    {
+        var light = parent.Find(name)?.GetComponent<Light2D>();
+        if (light == null)
+        {
+            light = new GameObject(name, typeof(Light2D)).GetComponent<Light2D>();
+            light.transform.SetParent(parent, false);
+        }
+        light.transform.localPosition = position;
+        light.lightType = Light2D.LightType.Point;
+        light.color = color;
+        light.intensity = intensity;
+        light.pointLightOuterRadius = radius;
+        light.pointLightInnerRadius = radius * .15f;
+        light.overlapOperation = Light2D.OverlapOperation.Additive;
+        TargetSortingLayers(light, SortingLayer.layers.Where(layer => layerNames.Contains(layer.name)).ToArray());
+    }
+
+    private static VolumeProfile BuildSceneProfile(string sceneName, StoryPalette palette)
+    {
+        var profile = Ensure<VolumeProfile>("Presentation/VP_" + sceneName);
+        var vignette = ProfileOverride<Vignette>(profile);
+        vignette.color.Override(palette.Sky);
+        vignette.intensity.Override(palette.Vignette);
+        vignette.smoothness.Override(.45f);
+        var grade = ProfileOverride<ColorAdjustments>(profile);
+        grade.colorFilter.Override(palette.Grade);
+        grade.postExposure.Override(palette.Exposure);
+        var bloom = ProfileOverride<Bloom>(profile);
+        bloom.threshold.Override(.85f);
+        bloom.intensity.Override(palette.Bloom);
+        bloom.scatter.Override(.55f);
+        EditorUtility.SetDirty(vignette);
+        EditorUtility.SetDirty(grade);
+        EditorUtility.SetDirty(bloom);
+        EditorUtility.SetDirty(profile);
+        return profile;
+    }
+
+    private static T ProfileOverride<T>(VolumeProfile profile) where T : VolumeComponent
+    {
+        if (!profile.TryGet<T>(out var component))
+        {
+            component = profile.Add<T>();
+            AssetDatabase.AddObjectToAsset(component, profile);
+        }
+        component.active = true;
+        return component;
     }
 
     private static void DestroyGeneratedChildren(Transform parent, string prefix)

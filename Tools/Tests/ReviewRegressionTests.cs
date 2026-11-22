@@ -5,6 +5,37 @@ internal static class ReviewRegressionTests
 {
     internal static void Run(Action<bool, string> check)
     {
+        var diveScenes = new[] { "SC_DiveZone1_Shallows", "SC_DiveZone2_Twilight", "SC_DiveZone3_Abyssal", "SC_DiveZone4_EventHorizon" };
+        var destinationArt = new[] { "shallows", "twilight", "abyssal", "event" };
+        for (int i = 0; i < diveScenes.Length; i++)
+        {
+            var palette = StoryPalette.ForScene(diveScenes[i]).Value;
+            check(palette.Biome == i && palette.Backdrop == destinationArt[i], "expedition uses its destination artwork: " + diveScenes[i]);
+            check((palette.WaterOpacity > 0f) == (i == 0), "water coloration only applies to the aquatic destination: " + diveScenes[i]);
+            check(palette.Ambient >= .8f && palette.WaterOpacity <= .15f, "dive keeps gameplay sprites readable: " + diveScenes[i]);
+            if (i > 0)
+            {
+                var shallower = StoryPalette.ForScene(diveScenes[i - 1]).Value;
+                check(palette.Ambient < shallower.Ambient && palette.Vignette > shallower.Vignette && palette.Exposure < shallower.Exposure,
+                    "dive atmosphere grows darker with depth: " + diveScenes[i]);
+            }
+        }
+        var mothership = StoryPalette.ForScene("SC_Mothership").Value;
+        var cantina = StoryPalette.ForScene("SC_NebulaCantina").Value;
+        check(mothership.Accent.r > mothership.Accent.b && cantina.Accent.r > cantina.Accent.b && mothership.Backdrop != cantina.Backdrop,
+            "hub and cantina use distinct warm looks");
+        check(!StoryPalette.ForScene("SC_BossArena").HasValue, "additive boss arena does not author another camera grade");
+
+        const float backdropWidth = 1376f, backdropHeight = 768f;
+        float standard = StoryBackdrop.CoverScale(backdropWidth, backdropHeight, 7f, 16f / 9f);
+        check(Math.Abs(backdropWidth * standard - 35f) < .001f, "standard display preserves story backdrop framing");
+        float ultrawideAspect = 32f / 9f;
+        float ultrawide = StoryBackdrop.CoverScale(backdropWidth, backdropHeight, 7f, ultrawideAspect);
+        check(Math.Abs(backdropWidth * ultrawide - 14f * ultrawideAspect) < .001f && ultrawide > standard,
+            "super ultrawide display fills the view without side bands");
+        float zoomedOut = StoryBackdrop.CoverScale(backdropWidth, backdropHeight, 11f, 9f / 16f);
+        check(Math.Abs(backdropHeight * zoomedOut - 22f) < .001f, "zoomed-out portrait display covers the view height");
+
         var stacks = new List<InventorySlotData> {
             new InventorySlotData { ItemId = "fish", Quantity = 1 }, new InventorySlotData { ItemId = "medkit", Quantity = 2 } };
         var selected = stacks[1]; stacks.RemoveAt(0);
