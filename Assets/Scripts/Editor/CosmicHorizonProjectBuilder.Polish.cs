@@ -110,7 +110,14 @@ public static partial class CosmicHorizonProjectBuilder
         int destination = DestinationIndex(scene.name);
         bool expedition = destination >= 0 || scene.name == "SC_Tutorial";
         int biomeIndex = Mathf.Max(0, destination);
-        string art = expedition ? DestinationArt[biomeIndex] : scene.name == "SC_NebulaCantina" ? "cantina" : "mothership";
+        Set(follow, "explorationZoom", expedition ? 5.9f : 7f, "swimmingZoom", 5.4f,
+            "offset", new Vector2(0f, biomeIndex > 0 ? 0.35f : 1f));
+        string art = expedition ? DestinationArt[biomeIndex] : scene.name switch
+        {
+            "SC_MainMenu" => "title",
+            "SC_NebulaCantina" => "cantina",
+            _ => "mothership"
+        };
         var root = roots.FirstOrDefault(go => go.name == "BiomePresentation");
         if (root == null) root = new GameObject("BiomePresentation");
         var parallax = root.GetComponent<ParallaxController>();

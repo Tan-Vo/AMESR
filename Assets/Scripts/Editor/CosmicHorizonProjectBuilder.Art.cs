@@ -32,6 +32,7 @@ public static partial class CosmicHorizonProjectBuilder
         renderer.sprite = BackdropSprite(art);
         renderer.sortingLayerName = "BG_Skybox";
         renderer.sortingOrder = order;
-        Set(backdrop.GetComponent<CosmicBackdrop>(), "worldCamera", camera, "alignWater", water);
+        Set(backdrop.GetComponent<CosmicBackdrop>(), "worldCamera", camera, "alignWater", water,
+            "overscan", art == "title" ? Vector2.one : new Vector2(1.3f, 1.12f));
     }
 }

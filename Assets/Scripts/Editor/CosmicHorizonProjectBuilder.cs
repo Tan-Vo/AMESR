@@ -282,6 +282,7 @@ public static partial class CosmicHorizonProjectBuilder
                 case string value: property.stringValue = value; break;
                 case int value: property.intValue = value; break;
                 case float value: property.floatValue = value; break;
+                case Vector2 value: property.vector2Value = value; break;
                 case Color value: property.colorValue = value; break;
                 case bool value: property.boolValue = value; break;
                 case UnityEngine.Object value: property.objectReferenceValue = value; break;

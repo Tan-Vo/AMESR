@@ -178,6 +178,7 @@ public static partial class CosmicHorizonProjectBuilder
             if (water != null) Object.DestroyImmediate(water);
             if (dock != null) Object.DestroyImmediate(dock);
             BuildExpeditionTerrain(scene, player.transform.position, biomeIndex);
+            BuildSuitTrail(player);
         }
         else if (water == null)
         {
@@ -206,6 +207,35 @@ public static partial class CosmicHorizonProjectBuilder
             BuildDiveAtmosphere(camera.transform);
         else if (legacyAtmosphere != null)
             Object.DestroyImmediate(legacyAtmosphere.gameObject);
+    }
+
+    private static void BuildSuitTrail(GameObject player)
+    {
+        var trail = player.transform.Find("SuitTrail")?.GetComponent<TrailRenderer>();
+        if (trail == null)
+        {
+            trail = new GameObject("SuitTrail", typeof(TrailRenderer)).GetComponent<TrailRenderer>();
+            trail.transform.SetParent(player.transform, false);
+        }
+        const string materialPath = "Assets/Materials/M_SuitTrail.mat";
+        var material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+        if (material == null)
+        {
+            material = new Material(Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default"));
+            AssetDatabase.CreateAsset(material, materialPath);
+        }
+        trail.transform.localPosition = new Vector3(0f, -0.1f, 0f);
+        trail.sharedMaterial = material;
+        trail.sortingLayerName = "Player";
+        trail.sortingOrder = -1;
+        trail.emitting = false;
+        trail.time = 0.32f;
+        trail.minVertexDistance = 0.035f;
+        trail.startWidth = 0.135f;
+        trail.endWidth = 0f;
+        trail.startColor = new Color(0.76f, 0.95f, 1f, 0.8f);
+        trail.endColor = new Color(0.31f, 0.66f, 0.93f, 0f);
+        Set(player.GetComponent<PlayerController>(), "suitTrail", trail);
     }
 
     private static void BuildExpeditionTerrain(Scene scene, Vector3 origin, int biomeIndex)

@@ -51,6 +51,7 @@ public sealed class PlayerController : MonoBehaviour
     private float slowScale = 1f;
     public bool IsUnderwater { get; private set; }
     [SerializeField] private bool spaceFlight;
+    [SerializeField] private TrailRenderer suitTrail;
     public bool RequiresAir => IsUnderwater || spaceFlight;
     public bool IsGrounded => grounded;
     private void OnEnable() { onPlayerEffectRequested?.RegisterListener(ApplyEffect); }
@@ -170,6 +171,8 @@ public sealed class PlayerController : MonoBehaviour
     }
     private void LateUpdate()
     {
+        if (suitTrail != null)
+            suitTrail.emitting = moveInput.sqrMagnitude > 0.01f && rb.linearVelocity.sqrMagnitude > 1f && !stats.IsDead();
         if (spriteRenderer != null && Mathf.Abs(moveInput.x) > 0.01f) spriteRenderer.flipX = moveInput.x < 0f;
         if (animator != null)
         {

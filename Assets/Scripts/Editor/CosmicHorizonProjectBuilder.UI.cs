@@ -99,31 +99,146 @@ public static partial class CosmicHorizonProjectBuilder
         {
             int destination = DestinationIndex(scene.name);
             bool expedition = destination >= 0 || scene.name == "SC_Tutorial";
-            string name = expedition ? DestinationNames[Mathf.Max(0, destination)] : scene.name == "SC_Mothership" ? "Mothership" : "Nebula Cantina";
-            Set(hud, "locationName", name, "showRange", expedition, "showDepth", destination <= 0);
-            var depth = root.Find("Depth")?.GetComponent<Text>();
-            if (depth != null)
+            string name = destination >= 0 ? DestinationNames[destination] : scene.name switch
             {
-                depth.alignment = TextAnchor.MiddleRight;
-                depth.font = UIFont(true);
-                depth.fontSize = 29;
-                depth.rectTransform.anchoredPosition = new Vector2(650, 435);
-            }
-            StyleIcon(root, "OxygenIcon", "oxygen");
-            StyleIcon(root, "FuelIcon", "battery");
-            var creditIcon = root.Find("CreditsIcon");
-            if (creditIcon != null) creditIcon.gameObject.SetActive(false);
-            var weaponIcon = root.Find("WeaponIcon");
-            if (weaponIcon != null) weaponIcon.gameObject.SetActive(expedition);
+                "SC_Tutorial" => "Training Dock",
+                "SC_Mothership" => "Mothership",
+                _ => "Nebula Cantina"
+            };
+            Set(hud, "locationName", name, "showRange", expedition, "showDepth", destination <= 0);
+            StyleExpeditionHUD(root, expedition);
         }
+        if (scene.name == "SC_BossArena") StyleBossHealth(root);
+        else if (scene.name != "SC_MainMenu") StyleSceneVignette(root);
+        foreach (var component in root.GetComponentsInChildren<Component>(true))
+            if (component is Graphic or Button or RectTransform)
+                RecordUIOverride(component);
     }
 
-    private static void StyleIcon(Transform root, string element, string art)
+    private static void StyleSceneVignette(Transform root)
     {
-        var icon = root.Find(element)?.GetComponent<Image>();
-        if (icon == null) return;
-        icon.type = Image.Type.Simple;
-        icon.sprite = ArtSprite("item_" + art);
+        var vignette = PresentationImage(root, "SceneVignette", Vector2.zero, Vector2.zero);
+        vignette.sprite = ArtSprite("ui_vignette");
+        vignette.color = new Color(0.015f, 0.025f, 0.055f);
+        var rect = vignette.rectTransform;
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+        vignette.transform.SetAsFirstSibling();
+    }
+
+    private static void StyleExpeditionHUD(Transform root, bool expedition)
+    {
+        var vitals = PresentationImage(root, "SuitReadout", new Vector2(-746, 438), new Vector2(332, 140));
+        vitals.color = Ink;
+        vitals.transform.SetAsFirstSibling();
+        vitals.gameObject.SetActive(expedition);
+        string[] bars = { "health", "oxygen", "fuel" };
+        Color[] colors = { new Color(0.91f, 0.50f, 0.45f), HUDManager.OxygenColor, Accent };
+        for (int i = 0; i < bars.Length; i++)
+        {
+            var track = root.Find(bars[i])?.GetComponent<Image>();
+            if (track == null) continue;
+            track.gameObject.SetActive(expedition);
+            track.sprite = null;
+            track.type = Image.Type.Simple;
+            track.color = new Color(0.18f, 0.24f, 0.32f);
+            track.rectTransform.anchoredPosition = new Vector2(-746, 463 - i * 40);
+            track.rectTransform.sizeDelta = new Vector2(288, 4);
+            var fill = track.transform.Find("Fill").GetComponent<Image>();
+            fill.rectTransform.sizeDelta = track.rectTransform.sizeDelta;
+            fill.color = colors[i];
+            var label = track.transform.Find("Label").GetComponent<Text>();
+            PositionLabel(label, new Vector2(0, 14), new Vector2(288, 21), 18, TextAnchor.MiddleLeft);
+            label.color = Paper;
+        }
+        foreach (string name in new[] { "OxygenIcon", "FuelIcon", "CreditsIcon" })
+            root.Find(name)?.gameObject.SetActive(false);
+        var hints = root.Find("QuickSlots")?.GetComponent<Text>();
+        if (hints != null)
+        {
+            PositionLabel(hints, new Vector2(-687, -506), new Vector2(450, 26), 18, TextAnchor.MiddleLeft);
+            hints.color = Muted;
+        }
+
+        var location = PresentationImage(root, "LocationReadout", new Vector2(724, 457), new Vector2(380, 104));
+        location.color = Ink;
+        location.transform.SetAsFirstSibling();
+        var depth = root.Find("Depth")?.GetComponent<Text>();
+        if (depth != null)
+        {
+            depth.font = UIFont(true);
+            PositionLabel(depth, new Vector2(724, 461), new Vector2(332, 91), 30, TextAnchor.MiddleRight);
+        }
+        var gauge = root.Find("DepthGauge")?.GetComponent<Image>();
+        if (gauge != null)
+        {
+            gauge.fillMethod = Image.FillMethod.Horizontal;
+            gauge.rectTransform.anchoredPosition = new Vector2(724, 411);
+            gauge.rectTransform.sizeDelta = new Vector2(378, 3);
+            gauge.gameObject.SetActive(expedition);
+        }
+        var credits = root.Find("Credits")?.GetComponent<Text>();
+        if (credits != null)
+        {
+            var position = new Vector2(724, 373);
+            var plate = PresentationImage(root, "CreditReadout", position, new Vector2(380, 48));
+            plate.color = Ink;
+            plate.transform.SetAsFirstSibling();
+            PositionLabel(credits, position, new Vector2(332, 45), 24, TextAnchor.MiddleRight);
+            credits.color = Accent;
+        }
+        var weapon = root.Find("Weapon")?.GetComponent<Text>();
+        if (weapon != null)
+        {
+            weapon.gameObject.SetActive(expedition);
+            PositionLabel(weapon, new Vector2(-680, -457), new Vector2(330, 42), 22, TextAnchor.MiddleLeft);
+        }
+        var weaponIcon = root.Find("WeaponIcon")?.GetComponent<RectTransform>();
+        if (weaponIcon != null)
+        {
+            weaponIcon.gameObject.SetActive(expedition);
+            weaponIcon.anchoredPosition = new Vector2(-884, -457);
+            weaponIcon.sizeDelta = new Vector2(42, 42);
+        }
+        var slots = root.GetComponentsInChildren<QuickSlotUI>(true);
+        for (int i = 0; i < slots.Length; i++)
+        {
+            var slot = slots[i];
+            slot.gameObject.SetActive(expedition);
+            var button = slot.GetComponent<Button>();
+            StyleActionButton(button, new Vector2(-136 + 68 * i, -473), new Vector2(60, 60));
+            PositionLabel(button.GetComponentInChildren<Text>(), new Vector2(0, -17), new Vector2(60, 20), 15);
+            slot.transform.Find("Consumable").GetComponent<RectTransform>().sizeDelta = new Vector2(30, 30);
+        }
+        var back = root.Find("Return to hub")?.GetComponent<Button>();
+        if (back != null) StyleActionButton(back, new Vector2(790, -473), new Vector2(248, 54));
+    }
+
+    private static void StyleBossHealth(Transform root)
+    {
+        var plate = root.Find("BossHealth")?.GetComponent<Image>();
+        if (plate == null) return;
+        plate.sprite = null;
+        plate.type = Image.Type.Simple;
+        plate.color = Ink;
+        plate.raycastTarget = false;
+        plate.rectTransform.anchoredPosition = new Vector2(0, 470);
+        plate.rectTransform.sizeDelta = new Vector2(678, 64);
+        Set(root.GetComponent<BossHealthBarUI>(), "displayedY", 470f);
+        var fill = plate.transform.Find("Fill").GetComponent<Image>();
+        fill.rectTransform.anchoredPosition = new Vector2(0, -21);
+        fill.rectTransform.sizeDelta = new Vector2(642, 5);
+        var label = plate.transform.Find("Name").GetComponent<Text>();
+        PositionLabel(label, new Vector2(0, 7), new Vector2(642, 43), 26);
+    }
+
+    private static void PositionLabel(Text label, Vector2 position, Vector2 size, int fontSize, TextAnchor alignment = TextAnchor.MiddleCenter)
+    {
+        label.rectTransform.anchoredPosition = position;
+        label.rectTransform.sizeDelta = size;
+        label.fontSize = fontSize;
+        label.alignment = alignment;
     }
 
     private static void StyleTitleScreen(Transform root)
@@ -132,42 +247,101 @@ public static partial class CosmicHorizonProjectBuilder
         if (title == null) return;
         title.text = "COSMIC\nHORIZON";
         title.alignment = TextAnchor.MiddleLeft;
-        title.fontSize = 112;
-        title.lineSpacing = 0.83f;
-        title.rectTransform.anchoredPosition = new Vector2(-510, 220);
-        title.rectTransform.sizeDelta = new Vector2(620, 300);
-        var panel = root.Find("TitlePanel")?.GetComponent<Image>();
-        if (panel == null) panel = Frame(root, "TitlePanel", new Vector2(-527, 7), new Vector2(700, 820));
-        panel.color = new Color(0.55f, 0.69f, 0.82f, 0.86f);
-        panel.raycastTarget = false;
-        panel.transform.SetAsFirstSibling();
+        title.fontSize = 158;
+        title.lineSpacing = 0.84f;
+        title.color = new Color(0.95f, 0.97f, 1f);
+        title.rectTransform.anchoredPosition = new Vector2(-500, 190);
+        title.rectTransform.sizeDelta = new Vector2(680, 350);
+        var oldPanel = root.Find("TitlePanel");
+        if (oldPanel != null) UnityEngine.Object.DestroyImmediate(oldPanel.gameObject);
+        var rule = PresentationImage(root, "TitleRule", new Vector2(-799, -1), new Vector2(82, 3));
+        rule.color = Accent;
         string[] labels = { "New Game", "Continue", "Settings", "Quit" };
         for (int i = 0; i < labels.Length; i++)
         {
             var button = root.Find(labels[i])?.GetComponent<Button>();
             if (button == null) continue;
-            ResizeButton(button, new Vector2(-593, 0 - i * 78), new Vector2(450, 60));
+            StyleActionButton(button, new Vector2(-654, -58 - i * 70), new Vector2(372, 56), i == 0);
         }
+        root.GetComponentsInChildren<SettingsUI>(true).FirstOrDefault()?.transform.SetAsLastSibling();
+    }
+
+    private static readonly Color Accent = new Color(0.97f, 0.73f, 0.40f);
+    private static readonly Color Ink = new Color(0.043f, 0.073f, 0.12f, 0.94f);
+    private static readonly Color Paper = new Color(0.90f, 0.94f, 0.99f);
+    private static readonly Color Muted = new Color(0.61f, 0.72f, 0.82f);
+
+    private static Image PresentationImage(Transform parent, string name, Vector2 position, Vector2 size)
+    {
+        var image = parent.Find(name)?.GetComponent<Image>() ?? Frame(parent, name, position, size);
+        image.type = Image.Type.Simple;
+        image.sprite = null;
+        image.raycastTarget = false;
+        image.rectTransform.anchoredPosition = position;
+        image.rectTransform.sizeDelta = size;
+        return image;
+    }
+
+    private static void StyleActionButton(Button button, Vector2 position, Vector2 size, bool primary = false)
+    {
+        ResizeButton(button, position, size);
+        var graphic = (Image)button.targetGraphic;
+        graphic.sprite = null;
+        graphic.type = Image.Type.Simple;
+        graphic.color = Color.white;
+        var colors = ColorBlock.defaultColorBlock;
+        colors.normalColor = primary ? Accent : Ink;
+        colors.highlightedColor = primary ? new Color(1f, 0.87f, 0.60f) : new Color(0.16f, 0.26f, 0.39f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.pressedColor = new Color(0.40f, 0.50f, 0.61f);
+        colors.disabledColor = new Color(0.04f, 0.07f, 0.11f, 0.50f);
+        button.colors = colors;
+        var label = button.GetComponentInChildren<Text>();
+        label.font = UIFont();
+        label.alignment = TextAnchor.MiddleLeft;
+        label.color = primary ? Ink : Paper;
+        label.rectTransform.sizeDelta = size - new Vector2(40f, 4f);
+        RecordUIOverride(button);
+        RecordUIOverride(graphic);
+        RecordUIOverride(button.transform);
+        RecordUIOverride(label);
+        RecordUIOverride(label.rectTransform);
+    }
+
+    private static void RecordUIOverride(Component component)
+    {
+        if (PrefabUtility.IsPartOfPrefabInstance(component))
+            PrefabUtility.RecordPrefabInstancePropertyModifications(component);
     }
 
     private static void StyleMissionBoard(Transform root)
     {
+        var panel = PresentationImage(root, "DispatchPanel", new Vector2(-638, 119), new Vector2(552, 766));
+        panel.color = Ink;
+        panel.transform.SetAsFirstSibling();
+        var rule = PresentationImage(root, "DispatchRule", new Vector2(-638, 378), new Vector2(504, 2));
+        rule.color = new Color(0.23f, 0.33f, 0.43f);
         var title = root.Find("HubTitle")?.GetComponent<Text>();
         if (title != null)
         {
-            title.text = "EXPEDITION TERMINAL";
-            title.fontSize = 36;
-            title.rectTransform.anchoredPosition = new Vector2(-733, 345);
-            title.rectTransform.sizeDelta = new Vector2(385, 55);
+            title.text = "EXPEDITION DISPATCH";
+            title.color = Paper;
+            PositionLabel(title, new Vector2(-638, 437), new Vector2(504, 68), 52, TextAnchor.MiddleLeft);
         }
-        string[] names = { "Tutorial", "Shallows", "Twilight", "Abyssal ≥1500m", "EventHorizon ≥2500m", "Cantina", "Sleep", "Claim boss loot", "Talk to crew" };
-        string[] labels = { "Training Dock", DestinationNames[0], DestinationNames[1], DestinationNames[2] + "  ·  1500 m",
-            DestinationNames[3] + "  ·  2500 m", "Nebula Cantina", "End day", "Claim boss loot", "Talk to crew" };
-        for (int i = 0; i < names.Length; i++)
+        string[] destinations = { "Shallows", "Twilight", "Abyssal ≥1500m", "EventHorizon ≥2500m" };
+        string[] readings = { "OCEAN", "LUNAR SURFACE", "VACUUM · SUIT 1500 M", "VACUUM · SUIT 2500 M" };
+        for (int i = 0; i < destinations.Length; i++)
         {
-            var button = root.Find(names[i])?.GetComponent<Button>();
+            var button = root.Find(destinations[i])?.GetComponent<Button>();
+            if (button != null) StyleDestinationCard(button, new Vector2(-768 + (i % 2) * 260, 272 - (i / 2) * 190), i, readings[i]);
+        }
+        string[] actions = { "Tutorial", "Cantina", "Talk to crew", "Sleep", "Claim boss loot" };
+        string[] labels = { "Training Dock", "Nebula Cantina", "Talk to crew", "End day", "Claim boss loot" };
+        for (int i = 0; i < actions.Length; i++)
+        {
+            var button = root.Find(actions[i])?.GetComponent<Button>();
             if (button == null) continue;
-            ResizeButton(button, new Vector2(-733, 281 - i * 60), new Vector2(365, 50));
+            StyleActionButton(button, new Vector2(-768 + (i % 2) * 260, -68 - (i / 2) * 66), new Vector2(244, 54));
             button.GetComponentInChildren<Text>().text = labels[i];
         }
         var workshop = root.Find("Workshop");
@@ -178,7 +352,8 @@ public static partial class CosmicHorizonProjectBuilder
             open = UIButton(root, "Suit workshop", Vector2.zero, null);
             UnityEventTools.AddBoolPersistentListener(open.onClick, workshop.gameObject.SetActive, true);
         }
-        ResizeButton(open, new Vector2(-733, -259), new Vector2(365, 50));
+        StyleActionButton(open, new Vector2(-508, -200), new Vector2(244, 54));
+        open.transform.SetSiblingIndex(panel.transform.GetSiblingIndex() + 1);
         if (workshop.Find("Close workshop") == null)
         {
             var close = UIButton(workshop, "Close workshop", Vector2.zero, null);
@@ -186,6 +361,28 @@ public static partial class CosmicHorizonProjectBuilder
             UnityEventTools.AddBoolPersistentListener(close.onClick, workshop.gameObject.SetActive, false);
         }
         workshop.gameObject.SetActive(false);
+    }
+
+    private static void StyleDestinationCard(Button button, Vector2 position, int index, string reading)
+    {
+        var size = new Vector2(244, 168);
+        StyleActionButton(button, position, size);
+        var thumbnail = PresentationImage(button.transform, "Landscape", new Vector2(0, 25), new Vector2(232, 104));
+        thumbnail.sprite = BackdropSprite(DestinationArt[index]);
+        thumbnail.color = new Color(1f, 1f, 1f, 0.94f);
+        thumbnail.transform.SetAsFirstSibling();
+        var thumbnailTint = thumbnail.GetComponent<CanvasGroup>();
+        if (thumbnailTint == null) thumbnailTint = thumbnail.gameObject.AddComponent<CanvasGroup>();
+        Set(button.GetComponent<UICommandButton>(), "availabilityGraphic", thumbnailTint);
+        var label = button.GetComponentInChildren<Text>();
+        label.font = UIFont(true);
+        label.text = DestinationNames[index];
+        PositionLabel(label, new Vector2(0, -45), new Vector2(216, 37), 29, TextAnchor.MiddleLeft);
+        var info = button.transform.Find("Terrain")?.GetComponent<Text>();
+        if (info == null) info = ServiceText(button.transform, "Terrain", Vector2.zero, Vector2.zero);
+        info.text = reading;
+        info.color = Muted;
+        PositionLabel(info, new Vector2(0, -68), new Vector2(216, 22), 16, TextAnchor.MiddleLeft);
     }
 
     private static void ResizeButton(Button button, Vector2 position, Vector2 size)

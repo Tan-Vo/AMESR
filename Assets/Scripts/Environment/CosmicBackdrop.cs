@@ -6,6 +6,7 @@ public sealed class CosmicBackdrop : MonoBehaviour
 {
     [SerializeField] private Camera worldCamera;
     [SerializeField] private bool alignWater;
+    [SerializeField] private Vector2 overscan = new Vector2(1.3f, 1.12f);
     private SpriteRenderer backdrop;
 
     private void Awake() => backdrop = GetComponent<SpriteRenderer>();
@@ -19,7 +20,7 @@ public sealed class CosmicBackdrop : MonoBehaviour
         var view = worldCamera.transform.position;
         float halfHeight = worldCamera.orthographicSize;
         float halfWidth = halfHeight * worldCamera.aspect;
-        float scale = Mathf.Max(2.6f * halfWidth / size.x, 2.24f * halfHeight / size.y);
+        float scale = 2f * Mathf.Max(overscan.x * halfWidth / size.x, overscan.y * halfHeight / size.y);
         float spareX = Mathf.Max(0f, size.x * scale * 0.5f - halfWidth);
         float spareY = Mathf.Max(0f, size.y * scale * 0.5f - halfHeight);
         float y = alignWater ? Mathf.Clamp(-0.15f * size.y * scale, view.y - spareY, view.y + spareY) : view.y;

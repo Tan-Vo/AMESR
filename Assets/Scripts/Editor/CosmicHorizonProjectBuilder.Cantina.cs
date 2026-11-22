@@ -192,25 +192,57 @@ public static partial class CosmicHorizonProjectBuilder
             label.font = UIFont(label.name == "PrepTitle");
         var panel = prep.GetComponent<Image>();
         if (panel == null) panel = prep.gameObject.AddComponent<Image>();
-        panel.sprite = UIFrame;
-        panel.type = Image.Type.Sliced;
+        panel.sprite = null;
+        panel.type = Image.Type.Simple;
+        panel.color = Ink;
         panel.raycastTarget = false;
-        panel.rectTransform.sizeDelta = new Vector2(880, 560);
-        panel.rectTransform.anchoredPosition = Vector2.zero;
-        if (prep.Find("PrepTitle") == null)
-            ServiceText(prep, "PrepTitle", new Vector2(0, 245), new Vector2(760, 42), 27).text = "PLAN TONIGHT'S MENU";
-        for (int i = 0; i < 9; i++)
+        panel.rectTransform.sizeDelta = new Vector2(790, 742);
+        panel.rectTransform.anchoredPosition = new Vector2(-515, 55);
+        var title = prep.Find("PrepTitle")?.GetComponent<Text>() ?? ServiceText(prep, "PrepTitle", Vector2.zero, Vector2.zero, 48);
+        title.text = "PLAN TONIGHT'S MENU";
+        title.color = Paper;
+        PositionLabel(title, new Vector2(0, 310), new Vector2(698, 64), 48, TextAnchor.MiddleLeft);
+        var rule = PresentationImage(prep, "MenuRule", new Vector2(0, 268), new Vector2(698, 2));
+        rule.color = Accent;
+        var recipes = CantinaRecipes();
+        for (int i = 0; i < recipes.Length; i++)
         {
-            var recipe = prep.Find("Recipe" + i)?.GetComponent<RectTransform>();
+            var recipe = prep.Find("Recipe" + i)?.GetComponent<Text>();
             if (recipe == null) continue;
-            recipe.anchoredPosition = new Vector2(0, 180 - i * 38);
-            recipe.sizeDelta = new Vector2(790, 37);
+            float row = 226 - i * 51;
+            var rowFrame = PresentationImage(prep, "RecipeRow" + i, new Vector2(0, row), new Vector2(698, 46));
+            rowFrame.color = new Color(0.09f, 0.15f, 0.22f);
+            PlaceBehind(rowFrame.transform, recipe.transform);
+            var icon = PresentationImage(prep, "RecipeIcon" + i, new Vector2(-309, row), new Vector2(48, 42));
+            icon.sprite = recipes[i].DishIcon;
+            icon.preserveAspect = true;
+            icon.color = Color.white;
+            PositionLabel(recipe, new Vector2(36, row), new Vector2(602, 46), 24, TextAnchor.MiddleLeft);
         }
-        var open = prep.Find("OpenCantina")?.GetComponent<RectTransform>();
-        if (open != null) open.anchoredPosition = new Vector2(0, -167);
-        var back = prep.Find("Return to hub")?.GetComponent<RectTransform>();
-        if (back != null) back.anchoredPosition = new Vector2(0, -224);
-        var status = canvas.transform.Find("Status")?.GetComponent<RectTransform>();
-        if (status != null) status.anchoredPosition = new Vector2(0, -315);
+        var open = prep.Find("OpenCantina")?.GetComponent<Text>();
+        if (open != null)
+        {
+            var position = new Vector2(-178, -288);
+            var openFrame = PresentationImage(prep, "OpenAction", position, new Vector2(340, 60));
+            openFrame.color = Accent;
+            PlaceBehind(openFrame.transform, open.transform);
+            open.color = Ink;
+            PositionLabel(open, position, new Vector2(340, 60), 26);
+        }
+        var back = prep.Find("Return to hub")?.GetComponent<Button>();
+        if (back != null) StyleActionButton(back, new Vector2(178, -288), new Vector2(340, 60));
+        var status = canvas.transform.Find("Status")?.GetComponent<Text>();
+        if (status != null)
+        {
+            PositionLabel(status, new Vector2(-515, -367), new Vector2(698, 72), 22, TextAnchor.MiddleLeft);
+            status.color = Paper;
+        }
+    }
+
+    private static void PlaceBehind(Transform background, Transform foreground)
+    {
+        int index = foreground.GetSiblingIndex();
+        if (background.GetSiblingIndex() < index) index--;
+        background.SetSiblingIndex(index);
     }
 }
