@@ -45,7 +45,6 @@ namespace MachSong
         public bool Boosting { get; private set; }
         private float pulseTime;
         private Vector2 rideOffset;
-        private Vector2 pulseExitVelocity;
 
         public bool Interact()
         {
@@ -55,7 +54,7 @@ namespace MachSong
                 Tethered = false;
                 if (Phase == RescuePhase.Pulse && PulseProgress > 0)
                 {
-                    Velocity += Vector2.ClampMagnitude(pulseExitVelocity,7f);
+                    Velocity = Vector2.ClampMagnitude(Velocity,7f);
                     ReleasedInPulse = true;
                 }
                 return true;
@@ -92,16 +91,18 @@ namespace MachSong
             if (Phase == RescuePhase.Pulse) MoveWreck(dt);
 
             bool towing = Tethered && Phase == RescuePhase.Recover;
-            Boosting = boost && direction.sqrMagnitude > .02f && Power > .035f;
+            bool riding = Phase == RescuePhase.Pulse && Tethered && PulseProgress > 0;
+            Boosting = !riding && boost && direction.sqrMagnitude > .02f && Power > .035f;
             Power = Mathf.Clamp01(Power + (Boosting ? -.39f : .37f)*dt);
             float speed = Boosting ? (towing ? 6.9f : 9.1f) : (towing ? 4.45f : 5.85f);
             speed *= 1f - Strain*.25f;
-            bool riding = Phase == RescuePhase.Pulse && Tethered && PulseProgress > 0;
             if (riding)
             {
                 RodeCapsule = true;
                 rideOffset = Vector2.ClampMagnitude(rideOffset + direction*dt*.88f,1.32f);
+                Vector2 previous = Pilot;
                 Pilot = Move(Pilot,Vector2.ClampMagnitude(Capsule + rideOffset-Pilot,dt*22f),PilotRadius);
+                Velocity = (Pilot-previous)/dt;
             }
             else
             {
@@ -143,10 +144,8 @@ namespace MachSong
             float eased = p*p*(3-2*p);
             float arc = Mathf.Sin(Mathf.PI*p);
             bool safe = Route == RescueRoute.UpperBridge;
-            Vector2 before = Capsule;
             Capsule = Vector2.Lerp(InitialCapsule,safe ? new Vector2(24.35f,2.38f) : new Vector2(24.8f,-2.86f),eased)
                       + Vector2.up*arc*.71f;
-            pulseExitVelocity = (Capsule-before)/dt;
             Plate = Vector2.Lerp(InitialPlate,safe ? new Vector2(18.75f,3.62f) : new Vector2(8.66f,3.36f),eased)
                     + Vector2.up*arc*(safe ? .13f : -.91f);
             PlateAngle = Mathf.Lerp(-9,safe ? -17 : 71,eased);
