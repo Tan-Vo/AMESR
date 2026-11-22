@@ -5,6 +5,25 @@ internal static class ReviewRegressionTests
 {
     internal static void Run(Action<bool, string> check)
     {
+        var diveScenes = new[] { "SC_DiveZone1_Shallows", "SC_DiveZone2_Twilight", "SC_DiveZone3_Abyssal", "SC_DiveZone4_EventHorizon" };
+        for (int i = 0; i < diveScenes.Length; i++)
+        {
+            var palette = StoryPalette.ForScene(diveScenes[i]).Value;
+            check(palette.Biome == i && palette.Backdrop == null, "dive retains the corresponding parallax biome: " + diveScenes[i]);
+            check(palette.Ambient >= .8f && palette.WaterOpacity <= .15f, "dive keeps gameplay sprites readable: " + diveScenes[i]);
+            if (i > 0)
+            {
+                var shallower = StoryPalette.ForScene(diveScenes[i - 1]).Value;
+                check(palette.Ambient < shallower.Ambient && palette.Vignette > shallower.Vignette && palette.Exposure < shallower.Exposure,
+                    "dive atmosphere grows darker with depth: " + diveScenes[i]);
+            }
+        }
+        var mothership = StoryPalette.ForScene("SC_Mothership").Value;
+        var cantina = StoryPalette.ForScene("SC_NebulaCantina").Value;
+        check(mothership.Accent.r > mothership.Accent.b && cantina.Accent.r > cantina.Accent.b && mothership.Backdrop != cantina.Backdrop,
+            "hub and cantina use distinct warm looks");
+        check(!StoryPalette.ForScene("SC_BossArena").HasValue, "additive boss arena does not author another camera grade");
+
         var stacks = new List<InventorySlotData> {
             new InventorySlotData { ItemId = "fish", Quantity = 1 }, new InventorySlotData { ItemId = "medkit", Quantity = 2 } };
         var selected = stacks[1]; stacks.RemoveAt(0);
