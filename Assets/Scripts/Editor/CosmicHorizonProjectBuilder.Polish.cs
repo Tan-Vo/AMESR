@@ -142,7 +142,7 @@ public static partial class CosmicHorizonProjectBuilder
             backdrop.sortingLayerName = "BG_Skybox";
             backdrop.sharedMaterial = mothership ? SpriteLitMaterial() : StoryUnlitMaterial();
             backdrop.transform.localPosition = new Vector3(0f, 0f, 30f);
-            backdrop.transform.localScale = Vector3.one * (35f / backdrop.sprite.bounds.size.x);
+            GetOrAdd<StoryBackdrop>(backdrop.gameObject).Fit(camera);
 
             if (mothership)
                 StoryLight(root.transform, "BridgeGlow", new Vector2(-5f, 1f), palette.Accent, .35f, 9f, "BG_Skybox");

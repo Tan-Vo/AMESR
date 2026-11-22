@@ -24,6 +24,16 @@ internal static class ReviewRegressionTests
             "hub and cantina use distinct warm looks");
         check(!StoryPalette.ForScene("SC_BossArena").HasValue, "additive boss arena does not author another camera grade");
 
+        const float backdropWidth = 1376f, backdropHeight = 768f;
+        float standard = StoryBackdrop.CoverScale(backdropWidth, backdropHeight, 7f, 16f / 9f);
+        check(Math.Abs(backdropWidth * standard - 35f) < .001f, "standard display preserves story backdrop framing");
+        float ultrawideAspect = 32f / 9f;
+        float ultrawide = StoryBackdrop.CoverScale(backdropWidth, backdropHeight, 7f, ultrawideAspect);
+        check(Math.Abs(backdropWidth * ultrawide - 14f * ultrawideAspect) < .001f && ultrawide > standard,
+            "super ultrawide display fills the view without side bands");
+        float zoomedOut = StoryBackdrop.CoverScale(backdropWidth, backdropHeight, 11f, 9f / 16f);
+        check(Math.Abs(backdropHeight * zoomedOut - 22f) < .001f, "zoomed-out portrait display covers the view height");
+
         var stacks = new List<InventorySlotData> {
             new InventorySlotData { ItemId = "fish", Quantity = 1 }, new InventorySlotData { ItemId = "medkit", Quantity = 2 } };
         var selected = stacks[1]; stacks.RemoveAt(0);
