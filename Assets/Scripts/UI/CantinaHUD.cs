@@ -14,6 +14,8 @@ public sealed class CantinaHUD : MonoBehaviour
     private void TimeChanged(float value) { remaining = value; }
     private void LateUpdate()
     {
+        summary.enabled = cantina.IsRunning;
+        if (!summary.enabled) return;
         displayRevenue = Mathf.MoveTowards(displayRevenue, cantina.Revenue, Time.unscaledDeltaTime * 300f);
         summary.text = "REVENUE ₡" + ((int)displayRevenue) + "   " + Mathf.CeilToInt(remaining) + "s   " + new string('★', session.Data.ReputationStars) + "\n";
         foreach (var dish in cantina.Menu) summary.text += dish.DishName + " ×" + stock.Servings(dish) + "   ";

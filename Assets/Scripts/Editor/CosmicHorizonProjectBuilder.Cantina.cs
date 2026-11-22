@@ -218,6 +218,9 @@ public static partial class CosmicHorizonProjectBuilder
             icon.preserveAspect = true;
             icon.color = Color.white;
             PositionLabel(recipe, new Vector2(36, row), new Vector2(602, 46), 24, TextAnchor.MiddleLeft);
+            recipe.resizeTextForBestFit = true;
+            recipe.resizeTextMinSize = 16;
+            recipe.resizeTextMaxSize = 24;
         }
         var open = prep.Find("OpenCantina")?.GetComponent<Text>();
         if (open != null)
@@ -234,7 +237,11 @@ public static partial class CosmicHorizonProjectBuilder
         var status = canvas.transform.Find("Status")?.GetComponent<Text>();
         if (status != null)
         {
-            PositionLabel(status, new Vector2(-515, -367), new Vector2(698, 72), 22, TextAnchor.MiddleLeft);
+            var position = new Vector2(-515, -392);
+            var statusFrame = PresentationImage(canvas.transform, "StatusFrame", position, new Vector2(790, 132));
+            statusFrame.color = Ink;
+            PlaceBehind(statusFrame.transform, status.transform);
+            PositionLabel(status, position, new Vector2(698, 116), 22, TextAnchor.MiddleLeft);
             status.color = Paper;
         }
     }
