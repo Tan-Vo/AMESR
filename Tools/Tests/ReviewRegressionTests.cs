@@ -17,6 +17,11 @@ internal static class ReviewRegressionTests
         check(PresentationRules.StartStandaloneArena(1, false), "direct arena entry starts encounter");
         check(!PresentationRules.StartStandaloneArena(2, false) && !PresentationRules.StartStandaloneArena(2, true) && !PresentationRules.StartStandaloneArena(1, true), "additive or active encounter never duplicates player or boss");
         check(!PresentationRules.StartStandaloneArena(0, false) && !PresentationRules.StartStandaloneArena(-1, false), "invalid scene counts do not bootstrap arena");
+        check(PresentationRules.AnchorWave(0, 0.8f, 0) == 0, "anchor starts at rest");
+        check(Math.Abs(PresentationRules.AnchorWave((float)Math.PI / 2, 1, 0) - 1) < 0.0001f, "anchor bob reaches upper bound");
+        check(Math.Abs(PresentationRules.AnchorWave(0, 1, (float)Math.PI * 1.5f) + 1) < 0.0001f, "anchor phase reaches lower bound");
+        check(PresentationRules.AnchorWave(100, 0, 0) == 0, "zero-frequency anchor remains still");
+        check(PresentationRules.AnchorWave(float.NaN, 1, 0) == 0 && PresentationRules.AnchorWave(1, float.PositiveInfinity, 0) == 0 && PresentationRules.AnchorWave(1, 1, float.NaN) == 0, "invalid pulse inputs do not corrupt transform");
         check(PresentationRules.RecipeName("abyssal_viper angler Platter") == "Abyssal Viper Angler Platter", "recipe names title-cased");
         check(PresentationRules.RecipeName(null) == "Unknown Dish" && PresentationRules.RecipeName(" ") == "Unknown Dish", "empty recipe name is readable");
         check(PresentationRules.RecipeLabel("cosmic fillet", 50, 0, false) == "Cosmic Fillet\n₡50 • 0 servings", "two-line recipe label includes empty stock");

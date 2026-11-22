@@ -125,12 +125,13 @@ public static partial class CosmicHorizonProjectBuilder
         var preview = root.transform.Find("EncounterPreview");
         if (preview == null) { preview = new GameObject("EncounterPreview", typeof(SpriteRenderer)).transform; preview.SetParent(root.transform, false); }
         preview.localPosition = new Vector3(10, 1, 0); preview.localScale = Vector3.one * 3f;
-        var sprite = preview.GetComponent<SpriteRenderer>(); sprite.sprite = SpriteAt(BossBodies[0]); sprite.sortingLayerName = "Creatures_Front";
+        var sprite = preview.GetComponent<SpriteRenderer>(); sprite.sprite = SpriteAt(BossBodies[0]); sprite.sortingLayerName = "Creatures_Front"; sprite.sharedMaterial = SpriteUnlitMaterial();
         Set(director, "standalonePlayer", player, "encounterPreview", preview.gameObject);
         var light = root.transform.Find("ArenaLight");
         if (light == null) { light = new GameObject("ArenaLight", typeof(UnityEngine.Rendering.Universal.Light2D)).transform; light.SetParent(root.transform, false); }
-        var ambient = light.GetComponent<UnityEngine.Rendering.Universal.Light2D>(); ambient.lightType = UnityEngine.Rendering.Universal.Light2D.LightType.Point;
-        ambient.pointLightOuterRadius = 50; ambient.intensity = 1;
+        var ambient = light.GetComponent<UnityEngine.Rendering.Universal.Light2D>(); ambient.lightType = UnityEngine.Rendering.Universal.Light2D.LightType.Global;
+        ambient.color = Color.white; ambient.intensity = 1;
+        Set(director, "standaloneLight", ambient);
         var layers = SortingLayer.layers; SetArray(ambient, "m_ApplyToSortingLayers", layers.Length, (p, i) => p.intValue = layers[i].id);
         if (root.transform.Find("ArenaWater") == null)
         {

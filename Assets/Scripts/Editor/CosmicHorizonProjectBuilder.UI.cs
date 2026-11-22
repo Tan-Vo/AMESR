@@ -309,8 +309,9 @@ public static partial class CosmicHorizonProjectBuilder
     {
         var manager = scene.GetRootGameObjects().Select(go => go.GetComponent<CantinaManager>()).First(value => value != null);
         var hud = root.gameObject.AddComponent<CantinaHUD>(); WireChannels(hud);
-        var summary = ServiceText(root, "CantinaHUD", Vector2.zero, new Vector2(850, 110), 28); summary.text = "REVENUE ₡0 • PREPARATION";
-        Anchor(summary.rectTransform, new Vector2(0, 1), new Vector2(480, -90));
+        var chip = Frame(root, "CantinaStatusChip", Vector2.zero, new Vector2(850, 110), "ui_panel_small"); chip.raycastTarget = false;
+        Anchor(chip.rectTransform, new Vector2(0, 1), new Vector2(480, -90));
+        var summary = ServiceText(chip.transform, "CantinaHUD", Vector2.zero, new Vector2(790, 80), 28); summary.text = "REVENUE ₡0 • PREPARATION";
         Set(hud, "cantina", manager, "stock", Ensure<SO_IngredientStock>("Data/SO_IngredientStock"), "summary", summary);
         var report = root.gameObject.AddComponent<NightReportUI>(); WireChannels(report);
         var panel = Frame(root, "NightReport", Vector2.zero, new Vector2(1100, 850));

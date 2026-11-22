@@ -22,6 +22,7 @@ public sealed class BossArenaDirector : MonoBehaviour
     [SerializeField] private Sprite jellyfishAdd;
     [SerializeField] private Sprite whaleAdd;
     [SerializeField] private GameObject standalonePlayer, standaloneHUD, encounterPreview;
+    [SerializeField] private UnityEngine.Rendering.Universal.Light2D standaloneLight;
     [SerializeField] private SO_IntEvent onStateEntered;
     private bool standalone;
     private readonly BossHazard[] hazards = new BossHazard[160];
@@ -38,6 +39,7 @@ public sealed class BossArenaDirector : MonoBehaviour
         if (encounterPreview != null) encounterPreview.SetActive(false);
         if (standalonePlayer != null) standalonePlayer.SetActive(standalone);
         if (standaloneHUD != null) standaloneHUD.SetActive(standalone);
+        if (standaloneLight != null) standaloneLight.enabled = standalone;
         if (standalone && standalonePlayer != null) onBossEncounterRequested.BeginStandalone(BossKind.AbyssalMaw, standalonePlayer.transform, Vector2.zero);
     }
     private void OnDestroy() { if (standalone) onBossEncounterRequested?.Clear(); }

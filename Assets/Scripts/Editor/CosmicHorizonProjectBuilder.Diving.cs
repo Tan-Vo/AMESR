@@ -115,18 +115,31 @@ public static partial class CosmicHorizonProjectBuilder
         anchor.tag = "GrapplePoint";
         anchor.GetComponent<CircleCollider2D>().radius = 0.65f;
         anchor.GetComponent<CircleCollider2D>().isTrigger = true;
-        anchor.GetComponent<SpriteRenderer>().sprite = SpriteAt("UI_Icons/gear_cosmic_hook.png");
-        anchor.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
-        anchor.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Front";
+        ConfigureGrappleVisual(anchor);
         PrefabUtility.SaveAsPrefabAsset(anchor, "Assets/Prefabs/Diving/PF_GrapplePoint.prefab");
+    }
+    private static void ConfigureGrappleVisual(GameObject anchor)
+    {
+        var oldArt = anchor.GetComponent<SpriteRenderer>(); if (oldArt != null) oldArt.enabled = false;
+        var visual = anchor.transform.Find("AnchorVisual");
+        if (visual == null) { visual = new GameObject("AnchorVisual", typeof(SpriteRenderer)).transform; visual.SetParent(anchor.transform, false); }
+        var art = visual.GetComponent<SpriteRenderer>(); art.sprite = SpriteAt("Environment/Generated/grapple_anchor.png");
+        art.sharedMaterial = SpriteUnlitMaterial(); art.sortingLayerName = "Environment_Front";
+        var glow = visual.Find("Glow");
+        if (glow == null) { glow = new GameObject("Glow", typeof(SpriteRenderer)).transform; glow.SetParent(visual, false); }
+        glow.localScale = Vector3.one * 1.12f;
+        var halo = glow.GetComponent<SpriteRenderer>(); halo.sprite = art.sprite; halo.sharedMaterial = art.sharedMaterial;
+        halo.sortingLayerName = art.sortingLayerName; halo.sortingOrder = -1; halo.color = new Color(0.1f, 1f, 1f, 0.3f);
+        var pulse = anchor.GetComponent<GrappleAnchorPulse>() ?? anchor.AddComponent<GrappleAnchorPulse>();
+        Set(pulse, "visual", visual, "glow", halo);
     }
     private static void BuildDivingScene(Scene scene, Transform player)
     {
         var existing = scene.GetRootGameObjects().FirstOrDefault(root => root.name == "DiveResources");
         if (existing != null)
         {
-            foreach (var renderer in existing.GetComponentsInChildren<SpriteRenderer>())
-                if (renderer.CompareTag("GrapplePoint")) renderer.sprite = SpriteAt("UI_Icons/gear_cosmic_hook.png");
+            foreach (Transform child in existing.transform)
+                if (child.CompareTag("GrapplePoint")) ConfigureGrappleVisual(child.gameObject);
             return;
         }
         var root = new GameObject("DiveResources");

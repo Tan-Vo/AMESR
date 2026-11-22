@@ -19,6 +19,12 @@ public static class PresentationRules
 
     public static bool StartStandaloneArena(int sceneCount, bool encounterActive) => sceneCount == 1 && !encounterActive;
 
+    public static float AnchorWave(float time, float frequency, float phase)
+    {
+        if (!float.IsFinite(time) || !float.IsFinite(frequency) || !float.IsFinite(phase)) return 0;
+        return (float)Math.Sin((double)time * frequency + phase);
+    }
+
     public static string RecipeName(string value) => string.IsNullOrWhiteSpace(value) ? "Unknown Dish" :
         CultureInfo.InvariantCulture.TextInfo.ToTitleCase(value.Replace('_', ' ').Trim().ToLowerInvariant());
 

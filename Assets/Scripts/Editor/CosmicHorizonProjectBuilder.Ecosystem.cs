@@ -143,6 +143,19 @@ public static partial class CosmicHorizonProjectBuilder
         var definitions = CreatureAssets();
         SetArray(database.GetComponent<CreatureDatabase>(), "creatures", definitions.Length, (p, i) => p.objectReferenceValue = definitions[i]);
     }
+    private static Material SpriteUnlitMaterial()
+    {
+        Folder("Assets/Materials");
+        const string path = "Assets/Materials/M_SpriteUnlit.mat";
+        var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (material == null)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+            if (shader == null) throw new InvalidOperationException("Missing URP 2D unlit sprite shader.");
+            material = new Material(shader); AssetDatabase.CreateAsset(material, path);
+        }
+        return material;
+    }
     private static Material SpriteLitMaterial()
     {
         Folder("Assets/Materials");

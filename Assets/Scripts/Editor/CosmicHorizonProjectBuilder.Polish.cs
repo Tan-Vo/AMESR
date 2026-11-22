@@ -123,6 +123,7 @@ public static partial class CosmicHorizonProjectBuilder
         {
             var obj = new GameObject("Parallax_" + i, typeof(SpriteRenderer)); obj.transform.SetParent(root.transform, false);
             var renderer = obj.GetComponent<SpriteRenderer>(); renderer.sprite = background; renderer.sortingLayerName = "BG_Skybox";
+            if (boss) renderer.sharedMaterial = SpriteUnlitMaterial();
             renderer.sortingOrder = boss ? 10 : 0; renderer.enabled = i < 3;
             obj.transform.localScale = Vector3.one * scale;
             obj.transform.position = new Vector3(camera.transform.position.x + (i % 3 - 1) * background.bounds.size.x * scale, camera.transform.position.y, 10 + i / 3);
