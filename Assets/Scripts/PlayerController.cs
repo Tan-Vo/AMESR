@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [DefaultExecutionOrder(100)]
@@ -31,6 +32,8 @@ public sealed class PlayerController : MonoBehaviour
     private PlayerStateMachine stateMachine;
     private PlayerStats stats;
     private JetpackSystem jetpack;
+    private RuntimeAnimatorController cachedAnimatorController;
+    private readonly Dictionary<int, AnimatorControllerParameterType> animatorParameterTypes = new();
     private Vector2 moveInput;
     private float coyoteTimeCounter;
     private float jumpBufferCounter;
@@ -167,25 +170,47 @@ public sealed class PlayerController : MonoBehaviour
     private void LateUpdate()
     {
         if (spriteRenderer != null && Mathf.Abs(moveInput.x) > 0.01f) spriteRenderer.flipX = moveInput.x < 0f;
-        if (animator != null)
-        {
-            animator.SetFloat(AnimatorHashes.Speed, Mathf.Abs(rb.linearVelocity.x));
-            animator.SetFloat(AnimatorHashes.VelocityY, rb.linearVelocity.y);
-            animator.SetBool(AnimatorHashes.IsRunning, running && grounded && Mathf.Abs(moveInput.x) > 0.01f);
-            animator.SetBool(AnimatorHashes.IsJumping, !grounded && !IsUnderwater);
-            animator.SetBool(AnimatorHashes.IsSwimming, IsUnderwater);
-            animator.SetBool(AnimatorHashes.IsDiving, IsUnderwater && moveInput.y < 0f);
-            animator.SetBool(AnimatorHashes.IsHurt, stateMachine.CurrentState == PlayerState.Hurt);
-            animator.SetBool(AnimatorHashes.IsDead, stats.IsDead());
-            animator.SetBool(AnimatorHashes.IsMining, stateMachine.CurrentState == PlayerState.Mining);
-            animator.SetBool(AnimatorHashes.IsShooting, stateMachine.CurrentState == PlayerState.Combat_Ranged);
-            animator.SetBool(AnimatorHashes.IsSlashing, stateMachine.CurrentState == PlayerState.Combat_Melee);
-            animator.SetBool(AnimatorHashes.IsHarpooning, stateMachine.CurrentState == PlayerState.HarpoonAiming || stateMachine.CurrentState == PlayerState.HarpoonReeling);
-            animator.SetBool(AnimatorHashes.IsWaitering, stateMachine.CurrentState >= PlayerState.Waiter_Idle && stateMachine.CurrentState <= PlayerState.Waiter_Serving);
-        }
+        UpdateAnimator();
         if (spriteRenderer != null && IsUnderwater && stats.IsLowOxygen() && !stats.IsDead() &&
             stateMachine.CurrentState != PlayerState.Hurt && lowOxygenFrames != null && lowOxygenFrames.Length > 0)
             spriteRenderer.sprite = lowOxygenFrames[(int)(Time.time * 8f) % lowOxygenFrames.Length];
+    }
+    private void UpdateAnimator()
+    {
+        if (animator == null || !animator.isActiveAndEnabled || !animator.isInitialized) return;
+        var controller = animator.runtimeAnimatorController;
+        if (controller == null) return;
+        if (controller != cachedAnimatorController)
+        {
+            cachedAnimatorController = controller;
+            animatorParameterTypes.Clear();
+            foreach (var parameter in animator.parameters)
+                animatorParameterTypes[parameter.nameHash] = parameter.type;
+        }
+
+        SetAnimatorFloat(AnimatorHashes.Speed, Mathf.Abs(rb.linearVelocity.x));
+        SetAnimatorFloat(AnimatorHashes.VelocityY, rb.linearVelocity.y);
+        SetAnimatorBool(AnimatorHashes.IsRunning, running && grounded && Mathf.Abs(moveInput.x) > 0.01f);
+        SetAnimatorBool(AnimatorHashes.IsJumping, !grounded && !IsUnderwater);
+        SetAnimatorBool(AnimatorHashes.IsSwimming, IsUnderwater);
+        SetAnimatorBool(AnimatorHashes.IsDiving, IsUnderwater && moveInput.y < 0f);
+        SetAnimatorBool(AnimatorHashes.IsHurt, stateMachine.CurrentState == PlayerState.Hurt);
+        SetAnimatorBool(AnimatorHashes.IsDead, stats.IsDead());
+        SetAnimatorBool(AnimatorHashes.IsMining, stateMachine.CurrentState == PlayerState.Mining);
+        SetAnimatorBool(AnimatorHashes.IsShooting, stateMachine.CurrentState == PlayerState.Combat_Ranged);
+        SetAnimatorBool(AnimatorHashes.IsSlashing, stateMachine.CurrentState == PlayerState.Combat_Melee);
+        SetAnimatorBool(AnimatorHashes.IsHarpooning, stateMachine.CurrentState == PlayerState.HarpoonAiming || stateMachine.CurrentState == PlayerState.HarpoonReeling);
+        SetAnimatorBool(AnimatorHashes.IsWaitering, stateMachine.CurrentState >= PlayerState.Waiter_Idle && stateMachine.CurrentState <= PlayerState.Waiter_Serving);
+    }
+    private void SetAnimatorBool(int hash, bool value)
+    {
+        if (animatorParameterTypes.TryGetValue(hash, out var type) && type == AnimatorControllerParameterType.Bool)
+            animator.SetBool(hash, value);
+    }
+    private void SetAnimatorFloat(int hash, float value)
+    {
+        if (animatorParameterTypes.TryGetValue(hash, out var type) && type == AnimatorControllerParameterType.Float)
+            animator.SetFloat(hash, value);
     }
     /// <summary>Requests a water-mode change on the next physics step.</summary>
     public void SetUnderwater(bool underwater)
