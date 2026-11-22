@@ -16,7 +16,7 @@ public sealed class PauseMenuUI : MonoBehaviour
     {
         paused = (GameState)state == GameState.Paused;
         if (!paused) canSave = CheckpointPolicy.CanSave((GameState)state);
-        if (saveButton != null) { saveButton.interactable = canSave; saveButton.GetComponentInChildren<Text>().text = canSave ? "Save" : "Save (hub only)"; }
+        if (saveButton != null) { saveButton.interactable = canSave; saveButton.GetComponentInChildren<Text>(true).text = canSave ? "Save" : "Save (hub only)"; }
         panel.SetActive(paused);
     }
     private void Update() { if (Input.GetKeyDown(KeyCode.Escape)) onUICommandRequested?.Raise(paused ? UICommand.Resume : UICommand.Pause); }

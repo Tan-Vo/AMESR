@@ -45,8 +45,7 @@ public static partial class CosmicHorizonProjectBuilder
             int index = i; var biome = BiomeAssets()[i];
             Color[] tints = { new Color(0.1f, 0.6f, 0.85f), new Color(0.35f, 0.15f, 0.65f), new Color(0.05f, 0.2f, 0.4f), new Color(0.2f, 0.05f, 0.3f) };
             Set(biome, "waterTintColor", tints[i], "waterTintIntensity", 0.12f + i * 0.04f, "ambientLightIntensity", 0.9f - i * 0.15f);
-            string[] layers = { "skybox", "distant", "atmospheric", "midground", "foreground" };
-            SetArray(biome, "backgroundTiles", 5, (p, j) => p.objectReferenceValue = SpriteAt("Backgrounds/bg_parallax_" + layers[j] + "_" + (index * 4 + 1).ToString("00") + ".png"));
+            SetArray(biome, "backgroundTiles", 5, (p, j) => p.objectReferenceValue = GeneratedBackground("dive_" + new[] { "shallows", "twilight", "abyssal", "eventhorizon" }[index]));
             SetArray(biome, "environmentProps", 12, (p, j) => p.objectReferenceValue = SpriteAt("Environment/env_coral_" + (index * 12 + j + 1).ToString("000") + ".png"));
         }
         foreach (UpgradeCategory category in Enum.GetValues(typeof(UpgradeCategory)))
@@ -75,8 +74,9 @@ public static partial class CosmicHorizonProjectBuilder
         var canvas = new GameObject("TutorialCanvas", typeof(Canvas), typeof(CanvasScaler)); canvas.transform.SetParent(tutorialRoot.transform, false);
         canvas.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay; canvas.GetComponent<Canvas>().sortingOrder = 500;
         canvas.GetComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; canvas.GetComponent<CanvasScaler>().referenceResolution = new Vector2(1920, 1080);
-        var panel = Frame(canvas.transform, "TutorialPrompt", new Vector2(0, 310), new Vector2(1100, 110)); panel.raycastTarget = false;
-        Set(tutorial, "panel", panel.gameObject, "instructions", ServiceText(panel.transform, "Instructions", Vector2.zero, new Vector2(1060, 100), 22));
+        var panel = Frame(canvas.transform, "TutorialPrompt", Vector2.zero, new Vector2(1150, 150), "ui_panel_small"); panel.raycastTarget = false;
+        Set(tutorial, "panel", panel.gameObject, "instructions", ServiceText(panel.transform, "Instructions", Vector2.zero, new Vector2(1050, 110), 30));
+        Anchor(panel.rectTransform, new Vector2(0.5f, 1), new Vector2(0, -270));
         panel.gameObject.SetActive(false);
         string[] sources = { "OnJumped", "OnLanded", "OnHarpoonFired", "OnCableSnapped", "OnCreatureCaught", "OnMineCompleted", "OnPlayerHurt", "OnPlayerDied", "OnDishReady", "OnDishServed", "OnBossDefeated", "OnSplash", "OnLowOxygen", "OnJetpackOverheated" };
         SfxType[] cues = { SfxType.Jump, SfxType.Land, SfxType.HarpoonFire, SfxType.CableSnap, SfxType.CreatureCaught, SfxType.MineComplete, SfxType.TakeDamage, SfxType.Die, SfxType.DishReady, SfxType.DishServed, SfxType.BossDefeat, SfxType.Splash, SfxType.OxygenWarning, SfxType.JetpackOverheat };
@@ -92,51 +92,70 @@ public static partial class CosmicHorizonProjectBuilder
             PrefabUtility.SaveAsPrefabAsset(currencyRoot, "Assets/Prefabs/Core/PF_CurrencyManager.prefab")
         };
     }
+    private static Sprite GeneratedBackground(string name) => SpriteAt("Backgrounds/Generated/bg_" + name + ".png") ?? throw new InvalidOperationException("Import the generated background bg_" + name + ".png before building.");
     private static void BuildScenePolish(Scene scene)
     {
-        if (scene.name == "SC_BossArena") return;
         var roots = scene.GetRootGameObjects();
         var camera = roots.First(go => go.GetComponent<Camera>() != null).GetComponent<Camera>();
+        bool dive = scene.name == "SC_Tutorial" || scene.name.StartsWith("SC_DiveZone", StringComparison.Ordinal);
+        bool boss = scene.name == "SC_BossArena";
         var oldFollow = camera.GetComponent<DiveSceneView>(); if (oldFollow != null) oldFollow.enabled = false;
-        var follow = camera.GetComponent<CameraFollow>(); if (follow == null) follow = camera.gameObject.AddComponent<CameraFollow>(); WireChannels(follow);
-        var shake = camera.GetComponent<CameraShake>(); if (shake == null) shake = camera.gameObject.AddComponent<CameraShake>(); WireChannels(shake);
+        var follow = camera.GetComponent<CameraFollow>() ?? camera.gameObject.AddComponent<CameraFollow>(); WireChannels(follow);
+        var shake = camera.GetComponent<CameraShake>() ?? camera.gameObject.AddComponent<CameraShake>(); WireChannels(shake);
         var player = roots.FirstOrDefault(go => go.GetComponent<PlayerController>() != null);
-        if (player != null) Set(follow, "target", player.transform);
-        if (roots.Any(go => go.name == "BiomePresentation")) return;
+        var arena = roots.FirstOrDefault(go => go.GetComponent<BossArenaDirector>() != null);
+        Set(follow, "target", boss ? arena.transform : player != null ? player.transform : null, "offset", Vector2.zero);
+        camera.backgroundColor = new Color(0.02f, 0.04f, 0.08f); camera.clearFlags = CameraClearFlags.SolidColor;
+        if (boss) { camera.transform.position = new Vector3(0, 0, -10); camera.depth = 1; var listener = camera.GetComponent<AudioListener>(); if (listener != null) listener.enabled = false; }
+        var existing = roots.FirstOrDefault(go => go.name == "BiomePresentation"); if (existing != null) UnityEngine.Object.DestroyImmediate(existing);
+        if (boss) foreach (var prop in arena.GetComponentsInChildren<SpriteRenderer>().Where(renderer => renderer.name.StartsWith("BiomeProp_", StringComparison.Ordinal)).ToArray()) UnityEngine.Object.DestroyImmediate(prop.gameObject);
         int biomeIndex = scene.name.Contains("Twilight") ? 1 : scene.name.Contains("Abyssal") ? 2 : scene.name.Contains("EventHorizon") ? 3 : 0;
-        var biome = BiomeAssets()[biomeIndex];
+        string image = boss ? "bossarena" : scene.name == "SC_MainMenu" ? "mainmenu" : scene.name == "SC_Mothership" ? "mothership" : scene.name == "SC_NebulaCantina" ? "cantina" :
+            "dive_" + new[] { "shallows", "twilight", "abyssal", "eventhorizon" }[biomeIndex];
+        var background = GeneratedBackground(image);
         var root = new GameObject("BiomePresentation"); var parallax = root.AddComponent<ParallaxController>();
-        Set(parallax, "cameraTransform", camera.transform, "automaticScroll", scene.name == "SC_MainMenu" ? 0.8f : 0f);
+        Set(parallax, "cameraTransform", camera.transform, "automaticScroll", 0f);
+        SetArray(parallax, "speeds", 5, (p, i) => p.floatValue = dive ? 0.08f : 1f);
         var tiles = new SpriteRenderer[15];
-        string[] layers = { "BG_Skybox", "BG_Distant", "BG_Atmospheric", "BG_Midground", "BG_Foreground" };
+        float height = camera.orthographicSize * 2f;
+        float scale = Mathf.Max(height * (16f / 9f) / background.bounds.size.x, height / background.bounds.size.y) * 1.15f;
         for (int i = 0; i < tiles.Length; i++)
         {
             var obj = new GameObject("Parallax_" + i, typeof(SpriteRenderer)); obj.transform.SetParent(root.transform, false);
-            var sprite = biome.BackgroundTiles[i / 3]; var renderer = obj.GetComponent<SpriteRenderer>();
-            renderer.sprite = sprite; renderer.sortingLayerName = layers[i / 3];
-            obj.transform.localScale = new Vector3(50f / sprite.bounds.size.x, 22f / sprite.bounds.size.y, 1);
+            var renderer = obj.GetComponent<SpriteRenderer>(); renderer.sprite = background; renderer.sortingLayerName = "BG_Skybox";
+            renderer.sortingOrder = boss ? 10 : 0; renderer.enabled = i < 3;
+            obj.transform.localScale = Vector3.one * scale;
+            obj.transform.position = new Vector3(camera.transform.position.x + (i % 3 - 1) * background.bounds.size.x * scale, camera.transform.position.y, 10 + i / 3);
             tiles[i] = renderer;
         }
+        // Runtime parallax and biome channels use a five-layer, three-copy array.
         SetArray(parallax, "tiles", tiles.Length, (p, i) => p.objectReferenceValue = tiles[i]);
-        var zone = root.AddComponent<BiomeZone>(); WireChannels(zone);
-        SetArray(zone, "biomes", 4, (p, i) => p.objectReferenceValue = BiomeAssets()[i]);
-        SetArray(zone, "backgroundTiles", tiles.Length, (p, i) => p.objectReferenceValue = tiles[i]);
-        var lighting = roots.Select(go => go.GetComponent<Light2D>()).FirstOrDefault(light => light != null);
-        if (lighting == null)
+        Light2D lighting = null;
+        if (!boss)
         {
-            lighting = new GameObject("GlobalLight2D", typeof(Light2D)).GetComponent<Light2D>();
-            lighting.lightType = Light2D.LightType.Global;
+            lighting = roots.Where(go => go != null).Select(go => go.GetComponent<Light2D>()).FirstOrDefault(light => light != null);
+            if (lighting == null) { lighting = new GameObject("GlobalLight2D", typeof(Light2D)).GetComponent<Light2D>(); lighting.lightType = Light2D.LightType.Global; }
+            var sorting = SortingLayer.layers;
+            SetArray(lighting, "m_ApplyToSortingLayers", sorting.Length, (p, i) => p.intValue = sorting[i].id);
         }
-        var sorting = SortingLayer.layers;
-        SetArray(lighting, "m_ApplyToSortingLayers", sorting.Length, (p, i) => p.intValue = sorting[i].id);
-        Set(zone, "ambient", lighting);
+        if (dive)
+        {
+            var zone = root.AddComponent<BiomeZone>(); WireChannels(zone);
+            SetArray(zone, "biomes", 4, (p, i) => p.objectReferenceValue = BiomeAssets()[i]);
+            SetArray(zone, "backgroundTiles", tiles.Length, (p, i) => p.objectReferenceValue = tiles[i]);
+            Set(zone, "ambient", lighting);
+        }
+        if (!scene.name.StartsWith("SC_DiveZone", StringComparison.Ordinal) && !boss) return;
         Vector3 origin = player != null ? player.transform.position : Vector3.zero;
+        var biome = BiomeAssets()[biomeIndex];
         for (int i = 0; i < 12; i++)
         {
-            var prop = new GameObject("BiomeProp_" + i, typeof(SpriteRenderer)); prop.transform.SetParent(root.transform, false);
-            prop.transform.position = origin + new Vector3(-16 + i * 3, -4 - i % 3, 0);
-            prop.GetComponent<SpriteRenderer>().sprite = biome.EnvironmentProps[i]; prop.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Back";
-            prop.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
+            var prop = new GameObject("BiomeProp_" + i, typeof(SpriteRenderer)); prop.transform.SetParent(boss ? arena.transform : root.transform, false);
+            var renderer = prop.GetComponent<SpriteRenderer>(); renderer.sprite = biome.EnvironmentProps[i]; renderer.sortingLayerName = "Environment_Back";
+            float propScale = 0.8f + (i * 7 % 5) * 0.13f;
+            prop.transform.localScale = Vector3.one * propScale;
+            prop.transform.localPosition = origin + new Vector3(-27 + i * 4.8f + (i % 2) * 0.7f, -7f + (i * 7 % 4) * 0.45f + renderer.sprite.bounds.size.y * propScale * 0.5f, 0);
+            if (!boss) renderer.sharedMaterial = SpriteLitMaterial();
         }
         if (!scene.name.StartsWith("SC_DiveZone", StringComparison.Ordinal)) return;
         for (int i = 0; i < 4; i++) BuildEnvironmentHazard(root.transform, origin + new Vector3(-9 + i * 6, -8, 0), (EnvironmentHazardType)i);

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -17,7 +18,10 @@ public static partial class CosmicHorizonProjectBuilder
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Exit Play Mode first.");
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+        if (EditorApplication.isCompiling || EditorApplication.isUpdating) throw new InvalidOperationException("Wait for script compilation and asset import to finish, then rebuild.");
         ConfigureProject();
+        BuildEventChannels();
         BuildData();
         BuildScenes();
         AssetDatabase.SaveAssets();
@@ -106,9 +110,7 @@ public static partial class CosmicHorizonProjectBuilder
             Set(data, "biomeName", biomes[i], "depthMin", depths[i], "depthMax", depths[i + 1]);
             SetArray(data, "spawnableCreatures", creatures.Length, (p, j) => p.objectReferenceValue = creatures[j]);
             SetArray(data, "spawnWeights", creatures.Length, (p, j) => p.floatValue = 1);
-            int variant = i + 1;
-            string[] backgrounds = { "skybox", "distant", "atmospheric", "midground", "foreground" };
-            SetArray(data, "backgroundTiles", 5, (p, j) => p.objectReferenceValue = SpriteAt("Backgrounds/bg_parallax_" + backgrounds[j] + "_" + variant.ToString("00") + ".png"));
+            SetArray(data, "backgroundTiles", 5, (p, j) => p.objectReferenceValue = GeneratedBackground("dive_" + new[] { "shallows", "twilight", "abyssal", "eventhorizon" }[i]));
         }
         var weapon = Ensure<SO_WeaponData>("Data/SO_BasicHarpoon");
         Set(weapon, "weaponName", "Gravity Harpoon", "icon", SpriteAt("Weapons/harpoon_tip_basic_gravity.png"), "projectileSprite", SpriteAt("Weapons/harpoon_tip_basic_gravity.png"));
@@ -197,6 +199,13 @@ public static partial class CosmicHorizonProjectBuilder
                         camera.GetComponent<Camera>().orthographicSize = 7;
                     }
                 }
+                if (names[i] == "SC_BossArena" && !scene.GetRootGameObjects().Any(root => root.GetComponent<Camera>() != null))
+                {
+                    var camera = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener)); camera.tag = "MainCamera";
+                    camera.transform.position = new Vector3(0, 0, -10);
+                    camera.GetComponent<Camera>().orthographic = true; camera.GetComponent<Camera>().orthographicSize = 9;
+                }
+                foreach (var camera in scene.GetRootGameObjects().Select(root => root.GetComponent<Camera>()).Where(value => value != null)) camera.aspect = 16f / 9f;
                 if (names[i] == "SC_Tutorial" || names[i].StartsWith("SC_DiveZone", StringComparison.Ordinal))
                 {
                     BuildDiveScene(scene, playerPrefab, i >= 3 && i <= 6 ? i - 3 : 0);
@@ -212,7 +221,7 @@ public static partial class CosmicHorizonProjectBuilder
             }
             EditorBuildSettings.scenes = buildScenes;
         }
-        finally { EditorSceneManager.RestoreSceneManagerSetup(setup); }
+        finally { if (setup.Length > 0) EditorSceneManager.RestoreSceneManagerSetup(setup); }
     }
 
     private static void EnsureScenePrefab<T>(Scene scene, GameObject prefab) where T : Component
@@ -223,6 +232,7 @@ public static partial class CosmicHorizonProjectBuilder
 
     private static void WireChannels(UnityEngine.Object component)
     {
+        if (component == null) throw new ArgumentNullException(nameof(component));
         var serialized = new SerializedObject(component);
         var property = serialized.GetIterator();
         while (property.NextVisible(true))
@@ -233,9 +243,10 @@ public static partial class CosmicHorizonProjectBuilder
             else if (property.name.StartsWith("on", StringComparison.Ordinal))
             {
                 string name = char.ToUpperInvariant(property.name[0]) + property.name.Substring(1);
-                var asset = AssetDatabase.LoadAssetAtPath<ScriptableObject>(Root + "/Events/" + name + ".asset");
-                if (asset == null) throw new InvalidOperationException("Missing channel: " + name);
-                property.objectReferenceValue = asset;
+                Type owner = component.GetType(); FieldInfo field = null;
+                while (owner != null && field == null) { field = owner.GetField(property.name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public); owner = owner.BaseType; }
+                if (field == null || !typeof(ScriptableObject).IsAssignableFrom(field.FieldType)) continue;
+                property.objectReferenceValue = Ensure(field.FieldType, "Events/" + name);
             }
         }
         serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -258,28 +269,54 @@ public static partial class CosmicHorizonProjectBuilder
     }
 
     private static T Ensure<T>(string relative) where T : ScriptableObject
+        => (T)Ensure(typeof(T), relative);
+
+    private static void BuildEventChannels()
+    {
+        var types = TypeCache.GetTypesDerivedFrom<MonoBehaviour>().Concat(TypeCache.GetTypesDerivedFrom<ScriptableObject>())
+            .Where(type => type.Assembly == typeof(GameManager).Assembly);
+        foreach (var type in types)
+        foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public))
+            if (field.IsDefined(typeof(SerializeField), true) && field.Name.StartsWith("on", StringComparison.Ordinal) && typeof(ScriptableObject).IsAssignableFrom(field.FieldType))
+                Ensure(field.FieldType, "Events/" + char.ToUpperInvariant(field.Name[0]) + field.Name.Substring(1));
+        foreach (string name in GameEvents) Ensure<SO_GameEvent>("Events/" + name);
+    }
+
+    private static ScriptableObject Ensure(Type type, string relative)
     {
         string path = Root + "/" + relative + ".asset";
         Folder(path.Substring(0, path.LastIndexOf('/')));
-        var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+        var asset = AssetDatabase.LoadAssetAtPath(path, type) as ScriptableObject;
         if (asset != null) return asset;
-        asset = ScriptableObject.CreateInstance<T>();
-        AssetDatabase.CreateAsset(asset, path);
+        if (!System.IO.File.Exists(System.IO.Path.Combine(Application.dataPath, "..", path)))
+        {
+            asset = ScriptableObject.CreateInstance(type);
+            if (asset == null) throw new InvalidOperationException("Cannot create " + type.FullName + ". Resolve script compilation errors before rebuilding.");
+            AssetDatabase.CreateAsset(asset, path);
+        }
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
+        asset = AssetDatabase.LoadAssetAtPath(path, type) as ScriptableObject;
+        if (asset == null) throw new InvalidOperationException("Cannot load " + path + " as " + type.FullName + ". Check its script reference and resolve compilation/import errors before rebuilding.");
         return asset;
     }
 
     private static void Set(UnityEngine.Object target, params object[] pairs)
     {
+        if (target == null) throw new ArgumentNullException(nameof(target), "Cannot serialize a missing builder asset. Check script compilation/import errors.");
         var serialized = new SerializedObject(target);
         for (int i = 0; i < pairs.Length; i += 2)
         {
             var property = serialized.FindProperty((string)pairs[i]);
+            if (property == null) throw new InvalidOperationException(target.GetType().Name + " has no serialized field " + pairs[i]);
             switch (pairs[i + 1])
             {
+                case null: property.objectReferenceValue = null; break;
                 case string value: property.stringValue = value; break;
                 case int value: property.intValue = value; break;
                 case float value: property.floatValue = value; break;
                 case Color value: property.colorValue = value; break;
+                case Vector2 value: property.vector2Value = value; break;
+                case Vector3 value: property.vector3Value = value; break;
                 case bool value: property.boolValue = value; break;
                 case UnityEngine.Object value: property.objectReferenceValue = value; break;
             }
