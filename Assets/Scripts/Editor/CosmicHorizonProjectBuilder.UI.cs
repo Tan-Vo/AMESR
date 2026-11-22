@@ -193,6 +193,7 @@ public static partial class CosmicHorizonProjectBuilder
         {
             var slot = slots[i];
             slot.gameObject.SetActive(expedition);
+            if (!expedition) continue;
             var button = slot.GetComponent<Button>();
             StyleActionButton(button, new Vector2(-136 + 68 * i, -473), new Vector2(60, 60));
             PositionLabel(button.GetComponentInChildren<Text>(), new Vector2(0, -17), new Vector2(60, 20), 15);
@@ -377,7 +378,7 @@ public static partial class CosmicHorizonProjectBuilder
         var rect = button.GetComponent<RectTransform>();
         rect.anchoredPosition = position;
         rect.sizeDelta = size;
-        var text = button.GetComponentInChildren<Text>();
+        var text = button.GetComponentInChildren<Text>(true);
         text.rectTransform.sizeDelta = size - new Vector2(24f, 4f);
         text.fontSize = 25;
     }
