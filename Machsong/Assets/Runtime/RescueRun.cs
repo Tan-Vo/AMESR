@@ -17,6 +17,7 @@ namespace MachSong
         public const float WallLeft = 7.9f, WallRight = 9.45f;
         public const float WorldLeft = -6.7f, WorldRight = 30.2f, Floor = -5.8f, Ceiling = 6.05f;
         public const float UpperMin = 1.99f, UpperMax = 4.69f, LowerMin = -5.22f, LowerMax = -2.54f;
+        private const float LowerCenter = (LowerMin+LowerMax)*.5f;
         private const float PilotRadius = .24f, CapsuleRadius = .44f;
         private const float Windup = .80f, PulseDuration = 1.85f;
 
@@ -144,7 +145,7 @@ namespace MachSong
             float eased = p*p*(3-2*p);
             float arc = Mathf.Sin(Mathf.PI*p);
             bool safe = Route == RescueRoute.UpperBridge;
-            Capsule = Vector2.Lerp(InitialCapsule,safe ? new Vector2(24.35f,2.38f) : new Vector2(24.8f,-2.86f),eased)
+            Capsule = Vector2.Lerp(InitialCapsule,safe ? new Vector2(24.35f,2.38f) : new Vector2(24.8f,LowerCenter),eased)
                       + Vector2.up*arc*.71f;
             Plate = Vector2.Lerp(InitialPlate,safe ? new Vector2(18.75f,3.62f) : new Vector2(8.66f,3.36f),eased)
                     + Vector2.up*arc*(safe ? .13f : -.91f);
