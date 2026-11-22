@@ -193,5 +193,41 @@ public static partial class CosmicHorizonProjectBuilder
         if (view == null) view = camera.AddComponent<DiveSceneView>();
         Set(view, "target", player.transform);
         camera.transform.position = player.transform.position + Vector3.back * 10f;
+        BuildDiveAtmosphere(camera.transform, biomeIndex);
+    }
+
+    private static void BuildDiveAtmosphere(Transform camera, int biomeIndex)
+    {
+        Folder("Assets/Materials");
+        string path = $"Assets/Materials/M_DiveAtmosphere_{biomeIndex}.mat";
+        var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (material == null)
+        {
+            var shader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/DiveAtmosphere.shader");
+            material = new Material(shader);
+            AssetDatabase.CreateAsset(material, path);
+        }
+        material.SetColor("_WaterTint", BiomeAssets()[biomeIndex].WaterTintColor);
+        EditorUtility.SetDirty(material);
+
+        const string name = "DiveAtmosphere";
+        var atmosphere = camera.Find(name);
+        if (atmosphere == null)
+        {
+            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            quad.name = name;
+            UnityEngine.Object.DestroyImmediate(quad.GetComponent<Collider>());
+            atmosphere = quad.transform;
+            atmosphere.SetParent(camera, false);
+        }
+        atmosphere.localPosition = Vector3.forward * 10f;
+        // Cover the maximum generated camera zoom even at ultrawide aspect ratios.
+        atmosphere.localScale = new Vector3(84f, 28f, 1f);
+        var renderer = atmosphere.GetComponent<MeshRenderer>();
+        renderer.sharedMaterial = material;
+        renderer.sortingLayerName = "Environment_Back";
+        renderer.sortingOrder = -20;
+        renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
     }
 }
