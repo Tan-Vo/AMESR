@@ -75,27 +75,27 @@ public static partial class CosmicHorizonProjectBuilder
         BuildPlayerEvents();
         Ensure<SO_SaveSession>("Data/SO_SaveSession");
         var meat = Ensure<SO_ItemData>("Data/SO_AlienMeat");
-        Set(meat, "itemName", "Alien Meat", "icon", SpriteAt("Creatures/alien_creature_001.png"), "category", 0);
+        Set(meat, "itemName", "Alien Meat", "icon", ArtSprite("item_fillets"), "category", 0);
         var crystal = Ensure<SO_ItemData>("Data/SO_QuantumCrystal");
-        Set(crystal, "itemName", "Quantum Crystal", "icon", SpriteAt("Items/crystal_quantum_biolum_gem_01.png"), "category", 1);
+        Set(crystal, "itemName", "Quantum Crystal", "icon", ArtSprite("item_crystal"), "category", 1);
         var recipe = Ensure<SO_DishRecipe>("Data/SO_CosmicSushi");
-        Set(recipe, "dishName", "Cosmic Sushi", "dishIcon", SpriteAt("Dishes/dish_sushi_nigiri_maki_06.png"), "dishSprite", SpriteAt("Dishes/dish_sushi_nigiri_maki_06.png"));
+        Set(recipe, "dishName", "Cosmic Sushi", "dishIcon", ArtSprite("service_sushi"), "dishSprite", ArtSprite("service_sushi"));
         SetArray(recipe, "ingredients", 1, (p, i) => { p.FindPropertyRelative("item").objectReferenceValue = meat; p.FindPropertyRelative("quantity").intValue = 1; });
         string[] species = { "abyssal_viper_angler", "biolum_jellyfish_comb", "crystal_isopod_crustacean", "prehistoric_trilobite_shell", "void_electric_eel" };
         var creatures = new SO_CreatureData[species.Length];
         for (int i = 0; i < species.Length; i++)
         {
             var data = creatures[i] = Ensure<SO_CreatureData>("Data/SO_" + species[i]);
-            string prefix = "Creatures/fauna_" + species[i] + "_";
-            Set(data, "creatureName", species[i].Replace('_', ' '), "icon", SpriteAt(prefix + "01.png"), "behaviorType", i == 0 || i == 4 ? 3 : 1);
-            SetArray(data, "animationFrames", 20, (p, frame) => p.objectReferenceValue = SpriteAt(prefix + (frame + 1).ToString("00") + ".png"));
+            Set(data, "creatureName", species[i].Replace('_', ' '), "behaviorType", i == 0 || i == 4 ? 3 : 1);
             SetArray(data, "lootTable", 1, (p, index) => { p.FindPropertyRelative("item").objectReferenceValue = meat; p.FindPropertyRelative("weight").intValue = 100; p.FindPropertyRelative("minAmount").intValue = 1; p.FindPropertyRelative("maxAmount").intValue = 3; });
             SetArray(data, "usableInRecipes", 1, (p, index) => p.objectReferenceValue = recipe);
         }
         foreach (UpgradeCategory category in Enum.GetValues(typeof(UpgradeCategory)))
         {
             var data = Ensure<SO_UpgradeData>("Data/SO_" + category);
-            Set(data, "upgradeName", category.ToString(), "category", (int)category, "icon", SpriteAt("Gear/gear_tech_001.png"), "costMultiplier", category == UpgradeCategory.OxygenTank || category == UpgradeCategory.Jetpack ? 2.15f : 1.618f);
+            string art = category == UpgradeCategory.OxygenTank ? "item_oxygen" : category == UpgradeCategory.HarpoonPower ? "item_harpoon" :
+                category == UpgradeCategory.DiveDepth ? "item_exotic" : "item_battery";
+            Set(data, "upgradeName", category.ToString(), "category", (int)category, "icon", ArtSprite(art), "costMultiplier", category == UpgradeCategory.OxygenTank || category == UpgradeCategory.Jetpack ? 2.15f : 1.618f);
             SetArray(data, "bonusPerLevel", 10, (p, i) => p.floatValue = (i + 1) * 10);
         }
         string[] biomes = { "Shallows", "Twilight", "Abyssal", "EventHorizon" };
@@ -103,22 +103,19 @@ public static partial class CosmicHorizonProjectBuilder
         for (int i = 0; i < biomes.Length; i++)
         {
             var data = Ensure<SO_BiomeData>("Data/SO_" + biomes[i]);
-            Set(data, "biomeName", biomes[i], "depthMin", depths[i], "depthMax", depths[i + 1]);
+            Set(data, "biomeName", DestinationNames[i], "depthMin", depths[i], "depthMax", depths[i + 1]);
             SetArray(data, "spawnableCreatures", creatures.Length, (p, j) => p.objectReferenceValue = creatures[j]);
             SetArray(data, "spawnWeights", creatures.Length, (p, j) => p.floatValue = 1);
-            int variant = i + 1;
-            string[] backgrounds = { "skybox", "distant", "atmospheric", "midground", "foreground" };
-            SetArray(data, "backgroundTiles", 5, (p, j) => p.objectReferenceValue = SpriteAt("Backgrounds/bg_parallax_" + backgrounds[j] + "_" + variant.ToString("00") + ".png"));
         }
         var weapon = Ensure<SO_WeaponData>("Data/SO_BasicHarpoon");
-        Set(weapon, "weaponName", "Gravity Harpoon", "icon", SpriteAt("Weapons/harpoon_tip_basic_gravity.png"), "projectileSprite", SpriteAt("Weapons/harpoon_tip_basic_gravity.png"));
+        Set(weapon, "weaponName", "Gravity Harpoon", "icon", ArtSprite("item_harpoon"), "projectileSprite", ArtSprite("item_harpoon"));
         var dialogue = Ensure<SO_DialogueLine>("Data/SO_Welcome");
-        Set(dialogue, "speakerName", "Tan", "portrait", SpriteAt("Characters/portrait_tan_neutral.png"));
+        Set(dialogue, "speakerName", "Tan", "portrait", ArtSprite("crew_tan"));
         SetArray(dialogue, "lines", 1, (p, i) => p.stringValue = "Welcome to the Cosmic Horizon.");
+        BuildEcosystemData();
         var quest = Ensure<SO_QuestData>("Data/SO_FirstCatch");
         Set(quest, "questName", "First Catch", "description", "Catch three creatures.", "creditReward", 100, "icon", creatures[0].Icon);
         SetArray(quest, "objectives", 1, (p, i) => { p.FindPropertyRelative("requiredAmount").intValue = 3; p.FindPropertyRelative("description").stringValue = "Catch any three creatures."; });
-        BuildEcosystemData();
         BuildCantinaData();
         BuildBossData();
         BuildPolishData();
@@ -130,6 +127,7 @@ public static partial class CosmicHorizonProjectBuilder
         Folder("Assets/Prefabs/Core");
         Folder("Assets/Scenes");
         var setup = EditorSceneManager.GetSceneManagerSetup();
+        bool restoreSetup = setup.Any(entry => entry.isLoaded && entry.isActive && !string.IsNullOrEmpty(entry.path));
         try
         {
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -206,13 +204,18 @@ public static partial class CosmicHorizonProjectBuilder
                 if (names[i] == "SC_NebulaCantina") BuildCantinaScene(scene, playerPrefab, customerPrefab);
                 if (names[i] == "SC_BossArena") BuildBossArena(scene, bossPrefabs);
                 BuildSceneUI(scene);
+                StyleSceneUI(scene);
                 BuildScenePolish(scene);
                 EditorSceneManager.SaveScene(scene, path);
                 buildScenes[i] = new EditorBuildSettingsScene(path, true);
             }
             EditorBuildSettings.scenes = buildScenes;
         }
-        finally { EditorSceneManager.RestoreSceneManagerSetup(setup); }
+        finally
+        {
+            if (restoreSetup) EditorSceneManager.RestoreSceneManagerSetup(setup);
+        }
+        if (!restoreSetup) EditorSceneManager.OpenScene("Assets/Scenes/SC_MainMenu.unity", OpenSceneMode.Single);
     }
 
     private static void EnsureScenePrefab<T>(Scene scene, GameObject prefab) where T : Component
@@ -279,6 +282,7 @@ public static partial class CosmicHorizonProjectBuilder
                 case string value: property.stringValue = value; break;
                 case int value: property.intValue = value; break;
                 case float value: property.floatValue = value; break;
+                case Vector2 value: property.vector2Value = value; break;
                 case Color value: property.colorValue = value; break;
                 case bool value: property.boolValue = value; break;
                 case UnityEngine.Object value: property.objectReferenceValue = value; break;

@@ -11,7 +11,7 @@ public sealed class TutorialManager : Singleton<TutorialManager>
     [SerializeField] private SO_UICommandEvent onUICommandRequested;
     [SerializeField] private GameObject panel;
     [SerializeField] private Text instructions;
-    private bool active, moved, oxygenSeen, inCantina, underwater;
+    private bool active, moved, oxygenSeen, inTraining, inCantina, underwater;
     private float elapsed;
     private static readonly string[] Steps = {
         "WASD to move, Space to jump — move, then jump.",
@@ -41,8 +41,13 @@ public sealed class TutorialManager : Singleton<TutorialManager>
     private void Begin() { session.Data.TutorialStep = 0; active = true; moved = oxygenSeen = inCantina = false; elapsed = 0; }
     private void Restore() { active = session.Data.TutorialStep > 0 && session.Data.TutorialStep < 10; }
     private void Navigation(UICommand command) { if (command == UICommand.MainMenu || command == UICommand.NewGame) active = false; }
-    private void Scene(string scene) { inCantina = scene == "SC_NebulaCantina"; }
-    private bool At(int step) => active && session.Data.TutorialStep == step;
+    private void Scene(string scene)
+    {
+        inTraining = scene is "SC_Tutorial" or "SC_DiveZone1_Shallows";
+        inCantina = scene == "SC_NebulaCantina";
+        underwater = false;
+    }
+    private bool At(int step) => active && session.Data.TutorialStep == step && (step < 6 ? inTraining : inCantina);
     private void Next() { session.Data.TutorialStep = Mathf.Min(10, session.Data.TutorialStep + 1); elapsed = 0; if (session.Data.TutorialStep == 10) active = false; }
     private void Caught() { if (At(3)) Next(); }
     private void Served() { if (At(8)) Next(); }
@@ -57,17 +62,19 @@ public sealed class TutorialManager : Singleton<TutorialManager>
     private void State(int value) { if (At(7) && (GameState)value == GameState.CantinaOpen) Next(); }
     private void Update()
     {
-        if (!active || Time.timeScale == 0f) return;
+        if (!At(session.Data.TutorialStep) || Time.timeScale == 0f) return;
         elapsed += Time.deltaTime;
         if (At(0)) { moved |= Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.1f; if (moved && Input.GetKeyDown(KeyCode.Space)) Next(); }
         else if (At(2) && underwater && elapsed > 1f) Next();
         else if (At(4) && oxygenSeen && elapsed >= 3f) Next();
         else if (At(5) && !underwater && elapsed > 1f) { Next(); onUICommandRequested?.Raise(UICommand.Cantina); }
-        else if (At(6) && inCantina && Input.GetKeyDown(KeyCode.E) || At(9) && Input.GetKeyDown(KeyCode.E)) Next();
+        else if ((At(6) || At(9)) && Input.GetKeyDown(KeyCode.E)) Next();
     }
     private void LateUpdate()
     {
-        panel.SetActive(active && Time.timeScale > 0f);
-        if (active) instructions.text = "TUTORIAL " + (session.Data.TutorialStep + 1) + "/10\n" + Steps[Mathf.Clamp(session.Data.TutorialStep, 0, 9)];
+        int step = session.Data.TutorialStep;
+        bool show = At(step) && Time.timeScale > 0f;
+        panel.SetActive(show);
+        if (show) instructions.text = "TUTORIAL " + (step + 1) + "/10\n" + Steps[Mathf.Clamp(step, 0, 9)];
     }
 }

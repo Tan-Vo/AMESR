@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum PlayerState { Idle, Walking, Running, Jumping, Falling, Landing, Swimming, Diving, Jetpacking, Mining, HarpoonAiming, HarpoonReeling, Combat_Melee, Combat_Ranged, Hurt, Dead, Interacting, Waiter_Idle, Waiter_Carrying, Waiter_Serving, Climbing, GrappleSwinging }
+public enum PlayerState { Idle, Walking, Running, Jumping, Falling, Landing, Swimming, Diving, Jetpacking, Mining, HarpoonAiming, HarpoonReeling, Combat_Melee, Combat_Ranged, Hurt, Dead, Interacting, Waiter_Idle, Waiter_Carrying, Waiter_Serving, Climbing, GrappleSwinging, Flying }
 
 public interface IPlayerState
 {
@@ -45,7 +45,7 @@ public sealed class PlayerStateMachine : MonoBehaviour
     public bool InWater { get; set; }
     public bool MovementLocked => stunRemaining > 0f || CurrentState == PlayerState.Dead || CurrentState == PlayerState.Hurt ||
         CurrentState == PlayerState.Mining || CurrentState == PlayerState.Interacting;
-    public bool IsLocomotion => CurrentState <= PlayerState.Jetpacking;
+    public bool IsLocomotion => CurrentState <= PlayerState.Jetpacking || CurrentState == PlayerState.Flying;
     private void Awake()
     {
         foreach (PlayerState value in System.Enum.GetValues(typeof(PlayerState))) states[value] = new State(this, value);

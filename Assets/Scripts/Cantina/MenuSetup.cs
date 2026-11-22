@@ -25,7 +25,7 @@ public sealed class MenuSetup : MonoBehaviour
     {
         prepPanel.SetActive(!cantina.IsRunning && !cantina.HasReport);
         for (int i = 0; i < recipes.Length; i++)
-            recipeLabels[i].text = (selected.Contains(recipes[i]) ? "✓ " : "") + recipes[i].DishName + "  ₡" + recipes[i].BasePrice + "  (" + stock.Servings(recipes[i]) + " servings)";
+            recipeLabels[i].text = (selected.Contains(recipes[i]) ? "✓ " : "") + recipes[i].DishName + "   ·   " + recipes[i].BasePrice + " CR   ·   " + stock.Servings(recipes[i]) + " servings";
         status.text = cantina.HasReport ? "Night report\nServed: " + cantina.Report.Served + "  Angry: " + cantina.Report.Angry +
             "\nRevenue: " + cantina.Report.Revenue + "  Tips: " + cantina.Report.Tips + "\nBest dish: " + cantina.Report.BestDish + "  Stars: " + cantina.Report.Stars :
             cantina.IsRunning ? "E at counter: pick up • E at table: serve • E: clear plates" : "Choose up to five dishes, then open. Ingredients come from your dive cargo.";

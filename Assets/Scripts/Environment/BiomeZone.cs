@@ -18,7 +18,12 @@ public sealed class BiomeZone : MonoBehaviour
             if (depth < biomes[i].DepthMin || depth >= biomes[i].DepthMax || current == i) continue;
             current = i;
             if (ambient != null) ambient.intensity = biomes[i].AmbientLightIntensity;
-            for (int j = 0; j < backgroundTiles.Length; j++) backgroundTiles[j].sprite = biomes[i].BackgroundTiles[j / 3];
+            var sprites = biomes[i].BackgroundTiles;
+            if (backgroundTiles != null && sprites != null)
+            {
+                for (int j = 0; j < backgroundTiles.Length && j / 3 < sprites.Length; j++)
+                    if (backgroundTiles[j] != null) backgroundTiles[j].sprite = sprites[j / 3];
+            }
             onBiomeChanged?.Raise(i);
             break;
         }

@@ -9,16 +9,16 @@ public static partial class CosmicHorizonProjectBuilder
     {
         Ensure<SO_DamageEvent>("Events/OnDamageRequested");
         Ensure<SO_FloatingTextEvent>("Events/OnFloatingTextRequested");
-        string[] sprites = { "basic_gravity", "blazing_plasma", "cryo_freeze", "shock_pulse", "dark_matter" };
+        string[] sprites = { "harpoon", "tip_explosive", "tip_ice", "tip_shock", "tip_poison" };
         for (int i = 0; i < TipNames.Length; i++)
         {
             var weapon = Ensure<SO_WeaponData>("Data/SO_" + TipNames[i]);
             Set(weapon, "weaponName", TipNames[i], "weaponType", (int)WeaponType.Harpoon, "harpoonEffect", i, "baseDamage", 10,
                 "fireRate", 1f, "projectileSpeed", 18f, "maxAmmo", 0, "range", 15f, "isMelee", false, "isAutomatic", false,
-                "icon", SpriteAt("Weapons/harpoon_tip_" + sprites[i] + ".png"), "projectileSprite", SpriteAt("Weapons/harpoon_tip_" + sprites[i] + ".png"));
+                "icon", ArtSprite("item_" + sprites[i]), "projectileSprite", ArtSprite("item_" + sprites[i]));
         }
         string[] names = { "Blaster", "PlasmaShotgun", "Sniper", "PlasmaBlade" };
-        string[] icons = { "primary_gun_cyber_pulse_rifle", "primary_gun_plasma_shotgun", "primary_gun_laser_sniper", "tool_laser_dagger" };
+        string[] icons = { "rifle", "shotgun", "sniper", "blade" };
         WeaponType[] types = { WeaponType.Blaster, WeaponType.Shotgun, WeaponType.Sniper, WeaponType.PlasmaBlade };
         int[] damage = { 8, 5, 35, 12 }, ammo = { 30, 8, 5, 0 };
         float[] rates = { 3f, 1f, 0.5f, 2.5f }, ranges = { 20f, 5f, 40f, 2f };
@@ -27,11 +27,11 @@ public static partial class CosmicHorizonProjectBuilder
             var weapon = Ensure<SO_WeaponData>("Data/SO_" + names[i]);
             Set(weapon, "weaponName", names[i], "weaponType", (int)types[i], "baseDamage", damage[i], "maxAmmo", ammo[i],
                 "fireRate", rates[i], "range", ranges[i], "reloadTime", 1.5f, "projectileSpeed", 22f,
-                "isAutomatic", i == 0, "isMelee", i == 3, "icon", SpriteAt("Weapons/" + icons[i] + ".png"),
-                "projectileSprite", SpriteAt("Weapons/ammo_quantum_battery_cell_01.png"));
+                "isAutomatic", i == 0, "isMelee", i == 3, "icon", ArtSprite("item_" + icons[i]),
+                "projectileSprite", ArtSprite("item_battery"));
         }
         var battery = Ensure<SO_ItemData>("Data/SO_QuantumBattery");
-        Set(battery, "itemName", "Quantum Battery", "icon", SpriteAt("Weapons/ammo_quantum_battery_cell_01.png"), "category", (int)ItemCategory.Material);
+        Set(battery, "itemName", "Quantum Battery", "icon", ArtSprite("item_battery"), "category", (int)ItemCategory.Material);
     }
     private static void BuildDamageReceiver(GameObject obj, MonoBehaviour target)
     {
@@ -50,7 +50,7 @@ public static partial class CosmicHorizonProjectBuilder
         projectile.layer = 8;
         projectile.transform.localScale = new Vector3(0.25f, 0.25f, 1f);
         var sprite = projectile.GetComponent<SpriteRenderer>();
-        sprite.sprite = SpriteAt("Weapons/ammo_quantum_battery_cell_01.png");
+        sprite.sprite = ArtSprite("item_battery");
         sprite.sharedMaterial = SpriteLitMaterial();
         sprite.sortingLayerName = "Weapons_FX";
         WireChannels(projectile.GetComponent<Projectile>());

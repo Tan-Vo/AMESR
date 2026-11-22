@@ -20,7 +20,7 @@ public static partial class CosmicHorizonProjectBuilder
         for (int i = 0; i < recipes.Length; i++)
         {
             var ingredient = i == 0 ? Ensure<SO_ItemData>("Data/SO_AlienMeat") : Ensure<SO_ItemData>("Data/SO_Catch_" + creatures[i - 1].name);
-            var sprite = SpriteAt("Dishes/dish_space_" + (i + 1).ToString("000") + ".png");
+            var sprite = ArtSprite("dish_" + i);
             Set(recipes[i], "dishName", i == 0 ? "Cosmic Fillet" : creatures[i - 1].CreatureName + " Platter",
                 "dishIcon", sprite, "dishSprite", sprite, "basePrice", 50 + i * 20, "cookTime", 3f + i * 0.15f, "servingsPerCook", 1);
             SetArray(recipes[i], "ingredients", 1, (p, j) => { p.FindPropertyRelative("item").objectReferenceValue = ingredient; p.FindPropertyRelative("quantity").intValue = 1; });
@@ -36,7 +36,7 @@ public static partial class CosmicHorizonProjectBuilder
         customer.tag = "Customer";
         customer.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Kinematic;
         customer.GetComponent<Rigidbody2D>().gravityScale = 0f;
-        customer.GetComponent<SpriteRenderer>().sprite = SpriteAt("Characters/character_npc_001.png");
+        customer.GetComponent<SpriteRenderer>().sprite = ArtSprite("service_guest_teal");
         customer.GetComponent<SpriteRenderer>().sortingLayerName = "Player";
         customer.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
         var bubble = new GameObject("Order", typeof(SpriteRenderer));
@@ -51,7 +51,7 @@ public static partial class CosmicHorizonProjectBuilder
         canvas.transform.localPosition = Vector3.up * 1.35f;
         canvas.transform.localScale = Vector3.one * 0.01f;
         var meter = DiveMeter(canvas.transform, "PatienceMeter", Vector2.zero, true);
-        meter.sprite = SpriteAt("UI/hud_target_crosshair_radar_01.png"); meter.fillMethod = Image.FillMethod.Radial360;
+        meter.sprite = ArtSprite("fx_warning_0"); meter.fillMethod = Image.FillMethod.Radial360;
         meter.rectTransform.sizeDelta = new Vector2(56, 56);
         meter.rectTransform.anchorMin = meter.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         meter.rectTransform.anchoredPosition = Vector2.zero;
@@ -65,7 +65,7 @@ public static partial class CosmicHorizonProjectBuilder
         var rect = obj.GetComponent<RectTransform>();
         rect.anchoredPosition = position; rect.sizeDelta = size;
         var label = obj.GetComponent<Text>();
-        label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        label.font = UIFont(fontSize >= 27);
         label.fontSize = fontSize; label.alignment = TextAnchor.MiddleCenter; label.raycastTarget = false;
         return label;
     }
@@ -73,7 +73,7 @@ public static partial class CosmicHorizonProjectBuilder
     {
         var obj = new GameObject(name, typeof(SpriteRenderer));
         obj.transform.SetParent(parent, false); obj.transform.position = position;
-        obj.GetComponent<SpriteRenderer>().sprite = SpriteAt("Furniture/" + sprite + ".png");
+        obj.GetComponent<SpriteRenderer>().sprite = ArtSprite("service_" + sprite);
         obj.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
         obj.GetComponent<SpriteRenderer>().sortingLayerName = "Environment_Back";
         return obj;
@@ -92,8 +92,13 @@ public static partial class CosmicHorizonProjectBuilder
             if (existingMenu != null)
             {
                 var prepPanel = new SerializedObject(existingMenu).FindProperty("prepPanel").objectReferenceValue as GameObject;
-                if (prepPanel != null) EnsureCantinaHubButton(prepPanel.transform);
+                if (prepPanel != null)
+                {
+                    EnsureCantinaHubButton(prepPanel.transform);
+                    StyleCantinaPrep(prepPanel.transform);
+                }
             }
+            StyleCantinaSet(existingService.transform, scene);
             return;
         }
         var root = new GameObject("CantinaService");
@@ -103,16 +108,15 @@ public static partial class CosmicHorizonProjectBuilder
         var spawner = root.AddComponent<CustomerSpawner>();
         var pool = Pool<CustomerPool>(root.transform, "CustomerPool", customerPrefab.GetComponent<CustomerAI>()); Set(pool, "initialSize", 15);
         Set(spawner, "pool", pool);
-        SetArray(spawner, "appearances", 100, (p, i) => p.objectReferenceValue = SpriteAt("Characters/character_npc_" + (i + 1).ToString("000") + ".png"));
-        var entrance = Furniture(root.transform, "Entrance", "furn_crew_bunk_airlock_01", new Vector2(-10, 0));
-        var exit = Furniture(root.transform, "Exit", "furn_crew_bunk_airlock_02", new Vector2(10, 0));
-        var counter = Furniture(root.transform, "ServingCounter", "furn_power_charger_workbench_01", new Vector2(0, 0));
-        Furniture(root.transform, "Kitchen", "furn_power_charger_workbench_02", new Vector2(0, 2));
+        var entrance = Furniture(root.transform, "Entrance", "airlock", new Vector2(-10, 0));
+        var exit = Furniture(root.transform, "Exit", "airlock", new Vector2(10, 0));
+        var counter = Furniture(root.transform, "ServingCounter", "counter", new Vector2(0, 0));
+        Furniture(root.transform, "Kitchen", "kitchen", new Vector2(0, 2));
         var ready = new GameObject("ReadyDish", typeof(SpriteRenderer)); ready.transform.SetParent(counter.transform, false);
         ready.transform.localPosition = Vector3.up * 0.8f; ready.GetComponent<SpriteRenderer>().sortingLayerName = "Weapons_FX";
         Set(kitchen, "readyDish", ready.GetComponent<SpriteRenderer>());
         var seats = new Transform[8];
-        for (int i = 0; i < seats.Length; i++) seats[i] = Furniture(root.transform, "Seat" + i, "furn_neon_table_booth_01", new Vector2(-7 + i * 2, 0)).transform;
+        for (int i = 0; i < seats.Length; i++) seats[i] = Furniture(root.transform, "Seat" + i, "booth", new Vector2(-7 + i * 2, 0)).transform;
         SetArray(manager, "seats", seats.Length, (p, i) => p.objectReferenceValue = seats[i]);
         Set(manager, "stock", Ensure<SO_IngredientStock>("Data/SO_IngredientStock"), "report", Ensure<SO_NightReport>("Data/SO_NightReport"),
             "kitchen", kitchen, "spawner", spawner, "entranceDoor", entrance.transform, "exitDoor", exit.transform);
@@ -130,7 +134,6 @@ public static partial class CosmicHorizonProjectBuilder
         Set(serving, "cantina", manager, "kitchen", kitchen, "counter", counter.transform, "traySprite", tray.GetComponent<SpriteRenderer>());
         var floor = new GameObject("CantinaFloor", typeof(SpriteRenderer), typeof(BoxCollider2D)); floor.layer = 9;
         floor.transform.position = new Vector3(0, -1, 0); floor.transform.localScale = new Vector3(25, 1, 1);
-        floor.GetComponent<SpriteRenderer>().sprite = SpriteAt("Tilesets/tile_008.png"); floor.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
         var camera = scene.GetRootGameObjects().First(obj => obj.GetComponent<Camera>() != null).GetComponent<Camera>();
         camera.orthographicSize = 7;
         var lighting = new GameObject("CantinaLight", typeof(UnityEngine.Rendering.Universal.Light2D));
@@ -157,6 +160,96 @@ public static partial class CosmicHorizonProjectBuilder
         var openButton = open.gameObject.AddComponent<Button>(); openButton.targetGraphic = open;
         UnityEventTools.AddPersistentListener(openButton.onClick, menu.Open);
         EnsureCantinaHubButton(prep.transform);
+        StyleCantinaPrep(prep.transform);
+        StyleCantinaSet(root.transform, scene);
         new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+    }
+
+    private static void StyleCantinaSet(Transform service, Scene scene)
+    {
+        SetArray(service.GetComponent<CustomerSpawner>(), "appearances", GuestArt.Length,
+            (p, i) => p.objectReferenceValue = ArtSprite("service_" + GuestArt[i]));
+        foreach (Transform child in service)
+        {
+            string art = child.name == "Entrance" || child.name == "Exit" ? "airlock" : child.name == "Kitchen" ? "kitchen" :
+                child.name == "ServingCounter" ? "counter" : child.name.StartsWith("Seat", System.StringComparison.Ordinal) ? "booth" : null;
+            if (art != null) child.GetComponent<SpriteRenderer>().sprite = ArtSprite("service_" + art);
+        }
+        var floor = scene.GetRootGameObjects().FirstOrDefault(go => go.name == "CantinaFloor");
+        if (floor != null) ConfigurePlatform(floor, ArtSprite("terrain_deck"), new Vector2(30, 1));
+    }
+
+    private static void StyleCantinaPrep(Transform prep)
+    {
+        var canvas = prep.GetComponentInParent<Canvas>();
+        canvas.sortingOrder = 400;
+        var scaler = canvas.GetComponent<CanvasScaler>();
+        if (scaler == null) scaler = canvas.gameObject.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+        foreach (var label in canvas.GetComponentsInChildren<Text>(true))
+            label.font = UIFont(label.name == "PrepTitle");
+        var panel = prep.GetComponent<Image>();
+        if (panel == null) panel = prep.gameObject.AddComponent<Image>();
+        panel.sprite = null;
+        panel.type = Image.Type.Simple;
+        panel.color = Ink;
+        panel.raycastTarget = false;
+        panel.rectTransform.sizeDelta = new Vector2(790, 742);
+        panel.rectTransform.anchoredPosition = new Vector2(-515, 55);
+        var title = prep.Find("PrepTitle")?.GetComponent<Text>() ?? ServiceText(prep, "PrepTitle", Vector2.zero, Vector2.zero, 48);
+        title.text = "PLAN TONIGHT'S MENU";
+        title.color = Paper;
+        PositionLabel(title, new Vector2(0, 310), new Vector2(698, 64), 48, TextAnchor.MiddleLeft);
+        var rule = PresentationImage(prep, "MenuRule", new Vector2(0, 268), new Vector2(698, 2));
+        rule.color = Accent;
+        var recipes = CantinaRecipes();
+        for (int i = 0; i < recipes.Length; i++)
+        {
+            var recipe = prep.Find("Recipe" + i)?.GetComponent<Text>();
+            if (recipe == null) continue;
+            float row = 226 - i * 51;
+            var rowFrame = PresentationImage(prep, "RecipeRow" + i, new Vector2(0, row), new Vector2(698, 46));
+            rowFrame.color = new Color(0.09f, 0.15f, 0.22f);
+            PlaceBehind(rowFrame.transform, recipe.transform);
+            var icon = PresentationImage(prep, "RecipeIcon" + i, new Vector2(-309, row), new Vector2(48, 42));
+            icon.sprite = recipes[i].DishIcon;
+            icon.preserveAspect = true;
+            icon.color = Color.white;
+            PositionLabel(recipe, new Vector2(36, row), new Vector2(602, 46), 24, TextAnchor.MiddleLeft);
+            recipe.resizeTextForBestFit = true;
+            recipe.resizeTextMinSize = 16;
+            recipe.resizeTextMaxSize = 24;
+        }
+        var open = prep.Find("OpenCantina")?.GetComponent<Text>();
+        if (open != null)
+        {
+            var position = new Vector2(-178, -288);
+            var openFrame = PresentationImage(prep, "OpenAction", position, new Vector2(340, 60));
+            openFrame.color = Accent;
+            PlaceBehind(openFrame.transform, open.transform);
+            open.color = Ink;
+            PositionLabel(open, position, new Vector2(340, 60), 26);
+        }
+        var back = prep.Find("Return to hub")?.GetComponent<Button>();
+        if (back != null) StyleActionButton(back, new Vector2(178, -288), new Vector2(340, 60));
+        var status = canvas.transform.Find("Status")?.GetComponent<Text>();
+        if (status != null)
+        {
+            var position = new Vector2(-515, -392);
+            var statusFrame = PresentationImage(canvas.transform, "StatusFrame", position, new Vector2(790, 132));
+            statusFrame.color = Ink;
+            PlaceBehind(statusFrame.transform, status.transform);
+            PositionLabel(status, position, new Vector2(698, 116), 22, TextAnchor.MiddleLeft);
+            status.color = Paper;
+        }
+    }
+
+    private static void PlaceBehind(Transform background, Transform foreground)
+    {
+        int index = foreground.GetSiblingIndex();
+        if (background.GetSiblingIndex() < index) index--;
+        background.SetSiblingIndex(index);
     }
 }

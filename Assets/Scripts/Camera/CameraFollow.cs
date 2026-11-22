@@ -9,6 +9,8 @@ public sealed class CameraFollow : MonoBehaviour
     [SerializeField] private float lookAheadDistance = 2f;
     [SerializeField] private float lookAheadSpeed = 3f;
     [SerializeField] private Vector2 offset = new Vector2(0, 1);
+    [SerializeField] private float explorationZoom = 7f;
+    [SerializeField] private float swimmingZoom = 6f;
     [SerializeField] private SO_IntEvent onStateEntered;
     [SerializeField] private SO_IntEvent onWaterStateChanged;
     [SerializeField] private SO_BossEncounterEvent onBossEncounterRequested;
@@ -41,7 +43,7 @@ public sealed class CameraFollow : MonoBehaviour
             previousTarget = current;
         }
         transform.SetPositionAndRotation(position, Quaternion.identity);
-        float zoom = state == GameState.BossFight ? 9f : state == GameState.CantinaOpen || state == GameState.CantinaPrep || state == GameState.NightShop ? 5f : underwater ? 6f : 7f;
+        float zoom = state == GameState.BossFight ? 9f : state == GameState.CantinaOpen || state == GameState.CantinaPrep || state == GameState.NightShop ? 5f : underwater ? swimmingZoom : explorationZoom;
         view.orthographicSize = Mathf.MoveTowards(view.orthographicSize, zoom, Time.unscaledDeltaTime * 5f);
     }
 }

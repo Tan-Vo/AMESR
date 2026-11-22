@@ -3,11 +3,15 @@ using UnityEngine.UI;
 
 public sealed class HUDManager : MonoBehaviour
 {
+    public static readonly Color OxygenColor = new Color(0.40f, 0.81f, 0.86f);
     [SerializeField] private SO_SaveSession session;
     [SerializeField] private SO_InventoryAccess inventory;
     [SerializeField] private SO_FloatEvent onHPChanged, onOxygenChanged, onFuelChanged, onDepthChanged;
     [SerializeField] private SO_WeaponHUDEvent onWeaponHUDChanged;
     [SerializeField] private SO_BiomeData[] biomes;
+    [SerializeField] private string locationName;
+    [SerializeField] private bool showRange = true;
+    [SerializeField] private bool showDepth = true;
     [SerializeField] private Image healthFill, oxygenFill, fuelFill, weaponIcon;
     [SerializeField] private Image depthFill;
     [SerializeField] private Text healthLabel, oxygenLabel, fuelLabel, depthLabel, creditsLabel, weaponLabel, quickLabel;
@@ -39,14 +43,20 @@ public sealed class HUDManager : MonoBehaviour
     }
     private void LateUpdate()
     {
+        weaponIcon.enabled = weaponIcon.sprite != null;
         healthFill.fillAmount = hp; oxygenFill.fillAmount = oxygen; fuelFill.fillAmount = fuel;
-        oxygenFill.color = oxygen < 0.2f ? Color.Lerp(Color.red, Color.white, (Mathf.Sin(Time.unscaledTime * 8f) + 1) * 0.5f) : Color.cyan;
-        healthLabel.text = "HP " + Mathf.CeilToInt(hp * 100) + "/100"; oxygenLabel.text = "O₂ " + Mathf.CeilToInt(oxygen * 100) + "%"; fuelLabel.text = "FUEL " + Mathf.CeilToInt(fuel * 100) + "%";
+        oxygenFill.color = oxygen < 0.2f ? Color.Lerp(Color.red, Color.white, (Mathf.Sin(Time.unscaledTime * 8f) + 1) * 0.5f) : OxygenColor;
+        healthLabel.text = "VITALS  " + Mathf.CeilToInt(hp * 100) + "%";
+        oxygenLabel.text = "OXYGEN  " + Mathf.CeilToInt(oxygen * 100) + "%";
+        fuelLabel.text = "FUEL  " + Mathf.CeilToInt(fuel * 100) + "%";
         string biomeName = "Surface";
         foreach (var biome in biomes) if (depth >= biome.DepthMin && depth < biome.DepthMax) { biomeName = biome.BiomeName; depthLabel.color = biome.WaterTintColor * 2f; break; }
-        depthLabel.text = depth.ToString("0") + "m • " + biomeName + "\nDAY " + session.Data.CurrentDay;
-        creditsLabel.text = "₡ " + session.Data.Credits.ToString("N0");
-        quickLabel.text = "I: cargo • F1–F5: consumables • Esc: pause";
-        depthFill.fillAmount = Mathf.Clamp01(depth / 3000f); depthFill.color = depthLabel.color;
+        string location = string.IsNullOrEmpty(locationName) ? biomeName : locationName;
+        if (!string.IsNullOrEmpty(locationName)) depthLabel.color = new Color(0.82f, 0.92f, 1f);
+        string reading = showRange ? (showDepth ? "DEPTH " : "RANGE ") + depth.ToString("0") + " m   ·   " : "";
+        depthLabel.text = location.ToUpperInvariant() + "\n<size=20>" + reading + "DAY " + session.Data.CurrentDay + "</size>";
+        creditsLabel.text = session.Data.Credits.ToString("N0") + "  CR";
+        quickLabel.text = "I  Cargo   ·   F1–F5  Consumables   ·   Esc  Pause";
+        depthFill.fillAmount = showRange ? Mathf.Clamp01(depth / 3000f) : 0f; depthFill.color = depthLabel.color;
     }
 }

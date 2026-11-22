@@ -6,10 +6,12 @@ internal static class ReviewRegressionTests
     internal static void Run(Action<bool, string> check)
     {
         var diveScenes = new[] { "SC_DiveZone1_Shallows", "SC_DiveZone2_Twilight", "SC_DiveZone3_Abyssal", "SC_DiveZone4_EventHorizon" };
+        var destinationArt = new[] { "shallows", "twilight", "abyssal", "event" };
         for (int i = 0; i < diveScenes.Length; i++)
         {
             var palette = StoryPalette.ForScene(diveScenes[i]).Value;
-            check(palette.Biome == i && palette.Backdrop == null, "dive retains the corresponding parallax biome: " + diveScenes[i]);
+            check(palette.Biome == i && palette.Backdrop == destinationArt[i], "expedition uses its destination artwork: " + diveScenes[i]);
+            check((palette.WaterOpacity > 0f) == (i == 0), "water coloration only applies to the aquatic destination: " + diveScenes[i]);
             check(palette.Ambient >= .8f && palette.WaterOpacity <= .15f, "dive keeps gameplay sprites readable: " + diveScenes[i]);
             if (i > 0)
             {

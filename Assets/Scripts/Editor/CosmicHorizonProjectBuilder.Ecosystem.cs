@@ -36,9 +36,11 @@ public static partial class CosmicHorizonProjectBuilder
             if (i >= Fauna.Length)
             {
                 string name = Fish[i - Fauna.Length];
-                Set(data, "creatureName", name.Substring(9).Replace('_', ' '), "icon", SpriteAt("DaveTheDiver_Fish/" + name + ".png"));
-                SetArray(data, "animationFrames", 1, (p, j) => p.objectReferenceValue = data.Icon);
+                Set(data, "creatureName", name.Substring(9).Replace('_', ' '));
             }
+            string art = "life_" + WildlifeArt[i];
+            Set(data, "icon", ArtSprite(art));
+            SetArray(data, "animationFrames", 2, (p, j) => p.objectReferenceValue = ArtSprite(j == 0 ? art : art + "_glide"));
             int speciesIndex = i;
             SetArray(data, "lootTable", 2, (p, j) =>
             {
@@ -109,7 +111,7 @@ public static partial class CosmicHorizonProjectBuilder
         rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         creature.GetComponent<CircleCollider2D>().radius = 0.3f;
-        creature.GetComponent<SpriteRenderer>().sprite = SpriteAt("Creatures/fauna_biolum_jellyfish_comb_01.png");
+        creature.GetComponent<SpriteRenderer>().sprite = ArtSprite("life_cuttlefish");
         creature.GetComponent<SpriteRenderer>().sortingLayerName = "Creatures_Front";
         creature.GetComponent<SpriteRenderer>().sharedMaterial = SpriteLitMaterial();
         var component = creature.AddComponent<T>();

@@ -26,7 +26,7 @@ public sealed class PlayerVitalsFeedback : MonoBehaviour
         }
         if (oxygenOverlay != null)
         {
-            float warning = controller.IsUnderwater && stats.IsLowOxygen() ? 0.12f + 0.1f * Mathf.Sin(Time.unscaledTime * 7f) : 0f;
+            float warning = controller.RequiresAir && stats.IsLowOxygen() ? 0.12f + 0.1f * Mathf.Sin(Time.unscaledTime * 7f) : 0f;
             oxygenOverlay.color = Color.Lerp(new Color(1f, 0f, 0f, warning), new Color(0f, 0f, 0f, 0.95f), suffocation);
         }
     }
