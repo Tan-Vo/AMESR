@@ -13,6 +13,8 @@ Bản chơi thử cứu hộ 2D. Một nhịp co của sinh vật làm xác tàu
 
 ## Unity
 
+Nếu tải từ GitHub, chạy `git lfs pull` với Git LFS đã cài để lấy hai font. Bản ZIP dự án đã chứa font.
+
 Mở chính thư mục **Machsong** bằng Unity **6000.5.7f1**, chọn **Mach Song → Open Rescue Scene** rồi bấm Play. Chọn **Mach Song → Build Windows** để tạo bản 64-bit trong `Builds/MachSong`.
 
 Bộ hình nằm trong Resources. Để render lại, chạy `python Art/render.py` với Pillow và NumPy. Font Barlow dùng SIL Open Font License, bản giấy phép nằm cùng font.
